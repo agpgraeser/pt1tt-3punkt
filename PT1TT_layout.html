@@ -251,6 +251,7 @@
             X50.value = "";
             X90.value = "";
         }
+        updateDerivedValues();
     }
 
     // DU = UE - UA
@@ -263,6 +264,8 @@
         } else {
             DU.value = "";
         }
+        updateDerivedValues();
+
     }
 
     // X-Werte berechnen
@@ -359,6 +362,13 @@
     t10.addEventListener("input", updateTimeOrder);
     t50.addEventListener("input", updateTimeOrder);
     t90.addEventListener("input", updateTimeOrder);
+    [t0, t10, t50, t90].forEach(el => {
+        el.addEventListener("input", () => {
+            updateTimeOrder();
+            updateDerivedValues();
+        });
+    });
+
 
     // Initiale Prüfung
     updateDY();
