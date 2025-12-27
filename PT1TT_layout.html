@@ -163,6 +163,20 @@
                 <div></div><div></div>
             </div>
         </div>
+        <div class="section">
+            <div class="panel-title">Berechnete Kennwerte</div>
+
+            <div class="field-row-compact">
+                <label for="kS">kS</label>
+                <input type="number" id="kS" class="output" readonly>
+
+                <label for="TT">TT</label>
+                <input type="number" id="TT" class="output" readonly>
+
+                <label for="TG">TG</label>
+                <input type="number" id="TG" class="output" readonly>
+            </div>
+        </div>
 
         <!-- Weitere Einstellungen -->
         <div class="section">
@@ -198,6 +212,9 @@
     const X10 = document.getElementById("X10");
     const X50 = document.getElementById("X50");
     const X90 = document.getElementById("X90");
+    const kS  = document.getElementById("kS");
+    const TT  = document.getElementById("TT");  
+    const TG  = document.getElementById("TG");
 
     // Basisfunktionen
     function isValidNumber(el) {
@@ -294,6 +311,42 @@
             t90.classList.add("invalid");
         }
     }
+        function updateDerivedValues() {
+
+            // Voraussetzung: alle Zeitfelder gültig
+            if (!isValidNumber(t0) || !isValidNumber(t10) || !isValidNumber(t50) || !isValidNumber(t90)) {
+                kS.value = "";
+                TT.value = "";
+                TG.value = "";
+                return;
+            }
+
+            const v0  = parseFloat(t0.value);
+            const v10 = parseFloat(t10.value);
+            const v50 = parseFloat(t50.value);
+            const v90 = parseFloat(t90.value);
+
+            // relative Zeiten
+            const t10_rel = v10 - v0;
+            const t50_rel = v50 - v0;
+            const t90_rel = v90 - v0;
+
+            // kS = DY / DU
+            if (isValidNumber(DY) && isValidNumber(DU) && parseFloat(DU.value) !== 0) {
+                kS.value = (parseFloat(DY.value) / parseFloat(DU.value)).toFixed(4);
+            } else {
+                kS.value = "";
+            }
+
+            // TT = (t10_rel - 0.046 * t90_rel) / 0.954
+            const TT_val = (t10_rel - 0.046 * t90_rel) / 0.954;
+            TT.value = TT_val.toFixed(4);
+
+            // TG = (9.491*t10_rel + 1.443*t50_rel + 0.434*t90_rel) / 3
+            const TG_val = (9.491 * t10_rel + 1.443 * t50_rel + 0.434 * t90_rel) / 3;
+            TG.value = TG_val.toFixed(4);
+        }
+      
 
     // Event Listener
     YA.addEventListener("input", updateDY);
