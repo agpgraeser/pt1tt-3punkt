@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Mikrowellen-Erwärmungszeit Rechner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Einfache, übersichtliche Gestaltung -->
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            background: #ffffff;
+            padding: 20px 25px 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin-bottom: 0.2rem;
+        }
+
+        p.description {
+            margin-top: 0;
+            color: #555;
+            font-size: 0.95rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 24px;
+            margin-top: 20px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+        }
+
+        input[type="number"],
+        select {
+            padding: 6px 8px;
+            font-size: 0.95rem;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #007acc;
+            box-shadow: 0 0 0 1px rgba(0,122,204,0.2);
+        }
+
+        .units {
+            font-size: 0.8rem;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        .result-box {
+            margin-top: 24px;
+            padding: 12px 15px;
+            background: #f0f7ff;
+            border-left: 4px solid #007acc;
+            border-radius: 4px;
+            font-size: 1.05rem;
+        }
+
+        .result-main {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .result-secondary {
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .formula {
+            margin-top: 18px;
+            font-family: "SF Mono", Menlo, Consolas, monospace;
+            font-size: 0.85rem;
+            background: #fafafa;
+            border-radius: 4px;
+            padding: 10px 12px;
+            border: 1px solid #eee;
+            white-space: pre-wrap;
+        }
+
+        .footer-note {
+            margin-top: 18px;
+            font-size: 0.8rem;
+            color: #777;
+        }
+
+        @media (max-width: 640px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>PT1TT Rechner</h1>
+    <p class="description">
+        Berechnet die Parameter eines PT1TT Streckenmodells aus  <strong>ΔX, ΔY</strong> 
+        und 3 Zeitmeßwerten,<strong>t_10,t_50 und t_90 </strong> .
+        Grundlage sind die Formeln <code>TT = (t_10-0,046*t_90)/0.954</code>.
+    </p>
+
+    <div class="grid">
+        <!-- Masse -->
+        <div class="field">
+            <label for="mass">Masse</label>
+            <input type="number" id="mass" value="0.5" min="0.01" step="0.05">
+            <div class="units">in kg (z.&nbsp;B. 0.5 für 500&nbsp;g)</div>
+        </div>
+
+        <!-- Temperaturdifferenz -->
+        <div class="field">
+            <label for="deltaT">Temperaturdifferenz ΔT</label>
+            <input type="number" id="deltaT" value="12" min="0" step="1">
+            <div class="units">in K bzw. °C (z.&nbsp;B. 12)</div>
+        </div>
+
+        <!-- Mikrowellenleistung -->
+        <div class="field">
+            <label for="power">Mikrowellenleistung P</label>
+            <input type="number" id="power" value="160" min="10" step="10">
+            <div class="units">in Watt (z.&nbsp;B. 160, 300, 600)</div>
+        </div>
+
+        <!-- Wirkungsgrad -->
+        <div class="field">
+            <label for="eta">Wirkungsgrad η</label>
+            <input type="number" id="eta" value="0.65" min="0.1" max="1" step="0.01">
+            <div class="units">typisch 0.6–0.7</div>
+        </div>
+
+        <!-- Lebensmittel -->
+        <div class="field">
+            <label for="food">Lebensmittel</label>
+            <select id="food">
+                <option value="Wasser">Wasser (4180 J/(kg·K))</option>
+                <option value="Milch">Milch (3900 J/(kg·K))</option>
+                <option value="Butter">Butter (2100 J/(kg·K))</option>
+                <option value="Pudding" selected>Pudding (3800 J/(kg·K))</option>
+                <option value="Schokolade">Schokolade (1700 J/(kg·K))</option>
+                <option value="Kartoffeln">Kartoffeln (3500 J/(kg·K))</option>
+                <option value="Pflanzenöl">Pflanzenöl (2000 J/(kg·K))</option>
+            </select>
+            <div class="units">spezifische Wärmekapazität c je nach Lebensmittel</div>
+        </div>
+
+        <!-- Platzhalter rechts, damit Grid voll bleibt -->
+        <div></div>
+    </div>
+
+    <div class="result-box">
+        <div class="result-main" id="result-main">
+            Benötigte Zeit: – 
+        </div>
+        <div class="result-secondary" id="result-secondary">
+            Bitte Eingaben prüfen.
+        </div>
+    </div>
+
+    <div class="formula">
+        Verwendete Formel:
+        t = m · c · ΔT / (P · η)
+        mit
+        m   ... Masse [kg]
+        c   ... spezifische Wärmekapazität [J/(kg·K)]
+        ΔT  ... Temperaturdifferenz [K]
+        P   ... Mikrowellenleistung [W]
+        η   ... Wirkungsgrad (0–1)
+    </div>
+
+    <div class="footer-note">
+        Hinweis: Dies ist ein idealisiertes physikalisches Modell. In der Praxis beeinflussen Gefäß,
+        Geometrie, Umrühren, Inhomogenitäten usw. die reale Erwärmungszeit. Die Ergebnisse sind
+        als technische Abschätzung zu verstehen.
+    </div>
+</div>
+
+<!-- JavaScript: Logik der Berechnung -->
+<script>
+    // Mapping der spezifischen Wärmekapazitäten [J/(kg*K)]
+    const foodCp = {
+        "Wasser":     4180,
+        "Milch":      3900,
+        "Butter":     2100,
+        "Pudding":    3800,
+        "Schokolade": 1700,
+        "Kartoffeln": 3500,
+        "Pflanzenöl": 2000
+    };
+
+    // DOM-Elemente referenzieren
+    const massInput   = document.getElementById("mass");
+    const dTInput     = document.getElementById("deltaT");
+    const powerInput  = document.getElementById("power");
+    const etaInput    = document.getElementById("eta");
+    const foodSelect  = document.getElementById("food");
+    const resultMain  = document.getElementById("result-main");
+    const resultSec   = document.getElementById("result-secondary");
+
+    function parsePositiveFloat(value) {
+        const x = parseFloat(value);
+        if (isNaN(x) || !isFinite(x) || x <= 0) {
+            return null;
+        }
+        return x;
+    }
+
+    function updateResult() {
+        // Eingabewerte einlesen und prüfen
+        const m   = parsePositiveFloat(massInput.value);
+        const dT  = parsePositiveFloat(dTInput.value);
+        const P   = parsePositiveFloat(powerInput.value);
+        const eta = parsePositiveFloat(etaInput.value);
+        const food = foodSelect.value;
+
+        if (!m || !dT || !P || !eta) {
+            resultMain.textContent = "Benötigte Zeit: –";
+            resultSec.textContent  = "Bitte alle Eingaben als positive Zahlen setzen.";
+            return;
+        }
+
+        if (eta > 1) {
+            resultMain.textContent = "Benötigte Zeit: –";
+            resultSec.textContent  = "Der Wirkungsgrad η sollte zwischen 0 und 1 liegen.";
+            return;
+        }
+
+        const c = foodCp[food];
+        if (!c) {
+            resultMain.textContent = "Benötigte Zeit: –";
+            resultSec.textContent  = "Unbekanntes Lebensmittel.";
+            return;
+        }
+
+        // Berechnung: t = m * c * ΔT / (P * η)
+        const tSeconds = (m * c * dT) / (P * eta);
+
+        // Ausgabe formatiert
+        resultMain.textContent = "Benötigte Zeit: " + tSeconds.toFixed(1) + " Sekunden";
+
+        const tMinutes = tSeconds / 60;
+        const details =
+            "m = " + m.toFixed(3) + " kg, " +
+            "ΔT = " + dT.toFixed(1) + " K, " +
+            "P = " + P.toFixed(0) + " W, " +
+            "η = " + eta.toFixed(2) + ", " +
+            "c(" + food + ") = " + c + " J/(kg·K).";
+
+        resultSec.textContent = details + " ≈ " + tMinutes.toFixed(2) + " Minuten.";
+    }
+
+    // Event-Listener setzen
+    [massInput, dTInput, powerInput, etaInput, foodSelect].forEach(el => {
+        el.addEventListener("input", updateResult);
+        el.addEventListener("change", updateResult);
+    });
+
+    // Initiale Berechnung beim Laden
+    updateResult();
+</script>
+</body>
+</html>

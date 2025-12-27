@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>PTn-Parameter Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f5f5f5;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            height: 100vh;
+        }
+
+        .left-panel {
+            background: #ffffff;
+            padding: 16px 20px;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.05);
+            overflow-y: auto;
+        }
+
+        .right-panel {
+            background: #fafafa;
+            padding: 10px;
+        }
+
+        .panel-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .field-row-compact {
+            display: grid;
+            grid-template-columns: auto 70px auto 70px auto 70px;
+            column-gap: 6px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .field-row-single {
+            display: grid;
+            grid-template-columns: auto 70px;
+            column-gap: 6px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .field-row-compact label,
+        .field-row-single label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-align: left;
+        }
+
+        .field-row-compact input,
+        .field-row-single input {
+            width: 70px;
+            padding: 4px 6px;
+            font-size: 0.85rem;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            text-align: right;
+            box-sizing: border-box;
+        }
+
+        .output {
+            background: #e5f7e5;
+            border: 1px solid #b2d8b2;
+        }
+
+        .plot-placeholder {
+            width: 100%;
+            height: 100%;
+            border: 1px dashed #bbb;
+            border-radius: 4px;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #777;
+            font-size: 0.95rem;
+        }
+
+        .invalid {
+            background: #ffcccc !important;
+            border-color: #ff4444 !important;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="app-container">
+
+    <!-- Linkes Drittel -->
+    <div class="left-panel">
+
+        <!-- PT1TT-Parameter -->
+        <div class="section">
+            <div class="panel-title">PT1TT-Parameter berechnen</div>
+
+            <div class="field-row-compact">
+                <label for="YA">YA</label>
+                <input type="number" id="YA" value="0.00" step="0.01">
+                <label for="YE">YE</label>
+                <input type="number" id="YE" value="1.00" step="0.01">
+                <label for="DY">DY</label>
+                <input type="number" id="DY" class="output" value="1.00" readonly>
+            </div>
+
+            <div class="field-row-compact">
+                <label for="UA">UA</label>
+                <input type="number" id="UA" value="0.00" step="0.01">
+                <label for="UE">UE</label>
+                <input type="number" id="UE" value="1.00" step="0.01">
+                <label for="DU">DU</label>
+                <input type="number" id="DU" class="output" value="1.00" readonly>
+            </div>
+
+            <div class="field-row-single">
+                <label for="t0">t₀</label>
+                <input type="number" id="t0" value="-100.0" step="0.1">
+            </div>
+        </div>
+
+        <!-- ZPK / 3-Punkt Methode -->
+        <div class="section">
+            <div class="panel-title">ZPK / 3-Punkt Methode</div>
+
+            <div class="field-row-compact">
+                <label for="X10">X10</label>
+                <input type="number" id="X10" class="output" value="0.00" readonly>
+                <label for="t10">t10</label>
+                <input type="number" id="t10" value="0.00" step="0.01">
+                <div></div><div></div>
+            </div>
+
+            <div class="field-row-compact">
+                <label for="X50">X50</label>
+                <input type="number" id="X50" class="output" value="0.00" readonly>
+                <label for="t50">t50</label>
+                <input type="number" id="t50" value="0.00" step="0.01">
+                <div></div><div></div>
+            </div>
+
+            <div class="field-row-compact">
+                <label for="X90">X90</label>
+                <input type="number" id="X90" class="output" value="0.00" readonly>
+                <label for="t90">t90</label>
+                <input type="number" id="t90" value="0.00" step="0.01">
+                <div></div><div></div>
+            </div>
+        </div>
+
+        <!-- Weitere Einstellungen -->
+        <div class="section">
+            <div class="panel-title">Weitere Einstellungen (Platzhalter)</div>
+        </div>
+
+    </div> <!-- Ende left-panel -->
+
+    <!-- Rechtes Zweidrittel -->
+    <div class="right-panel">
+        <div class="plot-placeholder">
+            Platzhalter für Grafik / Plot (PTn-Modelle)
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Referenzen
+    const YA = document.getElementById("YA");
+    const YE = document.getElementById("YE");
+    const DY = document.getElementById("DY");
+
+    const UA = document.getElementById("UA");
+    const UE = document.getElementById("UE");
+    const DU = document.getElementById("DU");
+
+    const t0  = document.getElementById("t0");
+    const t10 = document.getElementById("t10");
+    const t50 = document.getElementById("t50");
+    const t90 = document.getElementById("t90");
+
+    const X10 = document.getElementById("X10");
+    const X50 = document.getElementById("X50");
+    const X90 = document.getElementById("X90");
+
+    // Basisfunktionen
+    function isValidNumber(el) {
+        const v = parseFloat(el.value);
+        return !(isNaN(v) || !isFinite(v));
+    }
+
+    function updateFieldStyle(el) {
+        if (isValidNumber(el)) el.classList.remove("invalid");
+        else el.classList.add("invalid");
+    }
+
+    // t0 prüfen: gültig nur wenn > 0
+    function updateT0() {
+        const v = parseFloat(t0.value);
+        if (!isNaN(v) && isFinite(v) && v >= 0) {
+            t0.classList.remove("invalid");
+        } else {
+            t0.classList.add("invalid");
+        }
+    }
+
+    // DY = YE - YA
+    function updateDY() {
+        updateFieldStyle(YA);
+        updateFieldStyle(YE);
+
+        if (isValidNumber(YA) && isValidNumber(YE)) {
+            DY.value = (parseFloat(YE.value) - parseFloat(YA.value)).toFixed(2);
+            updateXvalues();
+        } else {
+            DY.value = "";
+            X10.value = "";
+            X50.value = "";
+            X90.value = "";
+        }
+    }
+
+    // DU = UE - UA
+    function updateDU() {
+        updateFieldStyle(UA);
+        updateFieldStyle(UE);
+
+        if (isValidNumber(UA) && isValidNumber(UE)) {
+            DU.value = (parseFloat(UE.value) - parseFloat(UA.value)).toFixed(2);
+        } else {
+            DU.value = "";
+        }
+    }
+
+    // X-Werte berechnen
+    function updateXvalues() {
+        if (!isValidNumber(YA) || !isValidNumber(DY)) {
+            X10.value = "";
+            X50.value = "";
+            X90.value = "";
+            return;
+        }
+
+        const ya = parseFloat(YA.value);
+        const dy = parseFloat(DY.value);
+
+        X10.value = (ya + 0.1 * dy).toFixed(2);
+        X50.value = (ya + 0.5 * dy).toFixed(2);
+        X90.value = (ya + 0.9 * dy).toFixed(2);
+    }
+
+    // Zeitbedingungen prüfen
+    function updateTimeOrder() {
+        updateT0();
+
+        updateFieldStyle(t10);
+        updateFieldStyle(t50);
+        updateFieldStyle(t90);
+
+        if (!isValidNumber(t0) || !isValidNumber(t10) || !isValidNumber(t50) || !isValidNumber(t90)) return;
+
+        const v0  = parseFloat(t0.value);
+        const v10 = parseFloat(t10.value);
+        const v50 = parseFloat(t50.value);
+        const v90 = parseFloat(t90.value);
+
+        if (v10 <= v0) t10.classList.add("invalid");
+        if (v50 <= v0) t50.classList.add("invalid");
+        if (v90 <= v0) t90.classList.add("invalid");
+
+        if (!(v10 < v50)) {
+            t10.classList.add("invalid");
+            t50.classList.add("invalid");
+        }
+
+        if (!(v50 < v90)) {
+            t50.classList.add("invalid");
+            t90.classList.add("invalid");
+        }
+    }
+
+    // Event Listener
+    YA.addEventListener("input", updateDY);
+    YE.addEventListener("input", updateDY);
+
+    UA.addEventListener("input", updateDU);
+    UE.addEventListener("input", updateDU);
+
+    t0.addEventListener("input", updateTimeOrder);
+    t10.addEventListener("input", updateTimeOrder);
+    t50.addEventListener("input", updateTimeOrder);
+    t90.addEventListener("input", updateTimeOrder);
+
+    // Initiale Prüfung
+    updateDY();
+    updateDU();
+    updateT0();
+    updateXvalues();
+    updateTimeOrder();
+</script>
+
+</body>
+</html>
+
