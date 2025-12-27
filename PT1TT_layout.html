@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>PTn-Parameter Tool</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         body {
@@ -26,9 +27,21 @@
         }
 
         .right-panel {
-            background: #fafafa;
+            flex: 1;                 /* rechter Bereich füllt den Platz */
+            display: flex;           /* damit das Canvas sich ausdehnen kann */
+            flex-direction: column;  /* falls später Buttons kommen */
             padding: 10px;
+            background: #fafafa;
+            overflow: hidden;        /* verhindert Überlaufen */
         }
+
+        #plotCanvas {
+            flex: 1;                 /* füllt den gesamten rechten Bereich */
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+
 
         .panel-title {
             font-weight: 600;
@@ -178,205 +191,369 @@
             </div>
         </div>
 
+        
+
+        <div class="section">
+            <div class="panel-title">Messdaten laden</div>
+
+            <input type="file" id="excelFile" accept=".xlsx,.xls" />
+            <div id="fileInfo" style="font-size:0.8rem; color:#555; margin-top:6px;"></div>
+        </div>
+
         <!-- Weitere Einstellungen -->
         <div class="section">
             <div class="panel-title">Weitere Einstellungen (Platzhalter)</div>
         </div>
-
     </div> <!-- Ende left-panel -->
 
     <!-- Rechtes Zweidrittel -->
     <div class="right-panel">
-        <div class="plot-placeholder">
-            Platzhalter für Grafik / Plot (PTn-Modelle)
-        </div>
+    <canvas id="plotCanvas"></canvas>
     </div>
 
+
+
+
 </div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <script>
-    // Referenzen
-    const YA = document.getElementById("YA");
-    const YE = document.getElementById("YE");
-    const DY = document.getElementById("DY");
+/* ---------------------------------------------------------
+   DOM-Referenzen
+--------------------------------------------------------- */
+const YA = document.getElementById("YA");
+const YE = document.getElementById("YE");
+const DY = document.getElementById("DY");
 
-    const UA = document.getElementById("UA");
-    const UE = document.getElementById("UE");
-    const DU = document.getElementById("DU");
+const UA = document.getElementById("UA");
+const UE = document.getElementById("UE");
+const DU = document.getElementById("DU");
 
-    const t0  = document.getElementById("t0");
-    const t10 = document.getElementById("t10");
-    const t50 = document.getElementById("t50");
-    const t90 = document.getElementById("t90");
+const t0  = document.getElementById("t0");
+const t10 = document.getElementById("t10");
+const t50 = document.getElementById("t50");
+const t90 = document.getElementById("t90");
 
-    const X10 = document.getElementById("X10");
-    const X50 = document.getElementById("X50");
-    const X90 = document.getElementById("X90");
-    const kS  = document.getElementById("kS");
-    const TT  = document.getElementById("TT");  
-    const TG  = document.getElementById("TG");
+const X10 = document.getElementById("X10");
+const X50 = document.getElementById("X50");
+const X90 = document.getElementById("X90");
 
-    // Basisfunktionen
-    function isValidNumber(el) {
-        const v = parseFloat(el.value);
-        return !(isNaN(v) || !isFinite(v));
+const kS  = document.getElementById("kS");
+const TT  = document.getElementById("TT");
+const TG  = document.getElementById("TG");
+
+const plotCanvas = document.getElementById("plotCanvas");
+const excelInput = document.getElementById("excelFile");
+const fileInfo   = document.getElementById("fileInfo");
+
+/* ---------------------------------------------------------
+   Datencontainer für Excel
+--------------------------------------------------------- */
+let timeData = [];
+let yData = [];
+let uData = [];
+let systemName = "";
+let varNames = {};
+let units = {};
+let fileName = "";
+
+/* ---------------------------------------------------------
+   Hilfsfunktionen
+--------------------------------------------------------- */
+function isValidNumber(el) {
+    const v = parseFloat(el.value);
+    return !(isNaN(v) || !isFinite(v));
+}
+
+function updateFieldStyle(el) {
+    if (isValidNumber(el)) el.classList.remove("invalid");
+    else el.classList.add("invalid");
+}
+
+/* ---------------------------------------------------------
+   t0 prüfen (gültig wenn >= 0)
+--------------------------------------------------------- */
+function updateT0() {
+    const v = parseFloat(t0.value);
+    if (!isNaN(v) && isFinite(v) && v >= 0) {
+        t0.classList.remove("invalid");
+    } else {
+        t0.classList.add("invalid");
+    }
+}
+
+/* ---------------------------------------------------------
+   DY = YE - YA
+--------------------------------------------------------- */
+function updateDY() {
+    updateFieldStyle(YA);
+    updateFieldStyle(YE);
+
+    if (isValidNumber(YA) && isValidNumber(YE)) {
+        DY.value = (parseFloat(YE.value) - parseFloat(YA.value)).toFixed(2);
+        updateXvalues();
+    } else {
+        DY.value = "";
+        X10.value = "";
+        X50.value = "";
+        X90.value = "";
     }
 
-    function updateFieldStyle(el) {
-        if (isValidNumber(el)) el.classList.remove("invalid");
-        else el.classList.add("invalid");
+    updateDerivedValues();
+}
+
+/* ---------------------------------------------------------
+   DU = UE - UA
+--------------------------------------------------------- */
+function updateDU() {
+    updateFieldStyle(UA);
+    updateFieldStyle(UE);
+
+    if (isValidNumber(UA) && isValidNumber(UE)) {
+        DU.value = (parseFloat(UE.value) - parseFloat(UA.value)).toFixed(2);
+    } else {
+        DU.value = "";
     }
 
-    // t0 prüfen: gültig nur wenn > 0
-    function updateT0() {
-        const v = parseFloat(t0.value);
-        if (!isNaN(v) && isFinite(v) && v >= 0) {
-            t0.classList.remove("invalid");
-        } else {
-            t0.classList.add("invalid");
-        }
+    updateDerivedValues();
+}
+
+/* ---------------------------------------------------------
+   X10/X50/X90 berechnen
+--------------------------------------------------------- */
+function updateXvalues() {
+    if (!isValidNumber(YA) || !isValidNumber(DY)) {
+        X10.value = "";
+        X50.value = "";
+        X90.value = "";
+        return;
     }
 
-    // DY = YE - YA
-    function updateDY() {
-        updateFieldStyle(YA);
-        updateFieldStyle(YE);
+    const ya = parseFloat(YA.value);
+    const dy = parseFloat(DY.value);
 
-        if (isValidNumber(YA) && isValidNumber(YE)) {
-            DY.value = (parseFloat(YE.value) - parseFloat(YA.value)).toFixed(2);
-            updateXvalues();
-        } else {
-            DY.value = "";
-            X10.value = "";
-            X50.value = "";
-            X90.value = "";
-        }
-        updateDerivedValues();
-    }
+    X10.value = (ya + 0.1 * dy).toFixed(2);
+    X50.value = (ya + 0.5 * dy).toFixed(2);
+    X90.value = (ya + 0.9 * dy).toFixed(2);
+}
 
-    // DU = UE - UA
-    function updateDU() {
-        updateFieldStyle(UA);
-        updateFieldStyle(UE);
-
-        if (isValidNumber(UA) && isValidNumber(UE)) {
-            DU.value = (parseFloat(UE.value) - parseFloat(UA.value)).toFixed(2);
-        } else {
-            DU.value = "";
-        }
-        updateDerivedValues();
-
-    }
-
-    // X-Werte berechnen
-    function updateXvalues() {
-        if (!isValidNumber(YA) || !isValidNumber(DY)) {
-            X10.value = "";
-            X50.value = "";
-            X90.value = "";
-            return;
-        }
-
-        const ya = parseFloat(YA.value);
-        const dy = parseFloat(DY.value);
-
-        X10.value = (ya + 0.1 * dy).toFixed(2);
-        X50.value = (ya + 0.5 * dy).toFixed(2);
-        X90.value = (ya + 0.9 * dy).toFixed(2);
-    }
-
-    // Zeitbedingungen prüfen
-    function updateTimeOrder() {
-        updateT0();
-
-        updateFieldStyle(t10);
-        updateFieldStyle(t50);
-        updateFieldStyle(t90);
-
-        if (!isValidNumber(t0) || !isValidNumber(t10) || !isValidNumber(t50) || !isValidNumber(t90)) return;
-
-        const v0  = parseFloat(t0.value);
-        const v10 = parseFloat(t10.value);
-        const v50 = parseFloat(t50.value);
-        const v90 = parseFloat(t90.value);
-
-        if (v10 <= v0) t10.classList.add("invalid");
-        if (v50 <= v0) t50.classList.add("invalid");
-        if (v90 <= v0) t90.classList.add("invalid");
-
-        if (!(v10 < v50)) {
-            t10.classList.add("invalid");
-            t50.classList.add("invalid");
-        }
-
-        if (!(v50 < v90)) {
-            t50.classList.add("invalid");
-            t90.classList.add("invalid");
-        }
-    }
-        function updateDerivedValues() {
-
-            // Voraussetzung: alle Zeitfelder gültig
-            if (!isValidNumber(t0) || !isValidNumber(t10) || !isValidNumber(t50) || !isValidNumber(t90)) {
-                kS.value = "";
-                TT.value = "";
-                TG.value = "";
-                return;
-            }
-
-            const v0  = parseFloat(t0.value);
-            const v10 = parseFloat(t10.value);
-            const v50 = parseFloat(t50.value);
-            const v90 = parseFloat(t90.value);
-
-            // relative Zeiten
-            const t10_rel = v10 - v0;
-            const t50_rel = v50 - v0;
-            const t90_rel = v90 - v0;
-
-            // kS = DY / DU
-            if (isValidNumber(DY) && isValidNumber(DU) && parseFloat(DU.value) !== 0) {
-                kS.value = (parseFloat(DY.value) / parseFloat(DU.value)).toFixed(4);
-            } else {
-                kS.value = "";
-            }
-
-            // TT = (t10_rel - 0.046 * t90_rel) / 0.954
-            const TT_val = (t10_rel - 0.046 * t90_rel) / 0.954;
-            TT.value = TT_val.toFixed(4);
-
-            // TG = (9.491*t10_rel + 1.443*t50_rel + 0.434*t90_rel) / 3
-            const TG_val = (9.491 * t10_rel + 1.443 * t50_rel + 0.434 * t90_rel) / 3;
-            TG.value = TG_val.toFixed(4);
-        }
-      
-
-    // Event Listener
-    YA.addEventListener("input", updateDY);
-    YE.addEventListener("input", updateDY);
-
-    UA.addEventListener("input", updateDU);
-    UE.addEventListener("input", updateDU);
-
-    t0.addEventListener("input", updateTimeOrder);
-    t10.addEventListener("input", updateTimeOrder);
-    t50.addEventListener("input", updateTimeOrder);
-    t90.addEventListener("input", updateTimeOrder);
-    [t0, t10, t50, t90].forEach(el => {
-        el.addEventListener("input", () => {
-            updateTimeOrder();
-            updateDerivedValues();
-        });
-    });
-
-
-    // Initiale Prüfung
-    updateDY();
-    updateDU();
+/* ---------------------------------------------------------
+   Zeitvalidierung
+--------------------------------------------------------- */
+function updateTimeOrder() {
     updateT0();
-    updateXvalues();
-    updateTimeOrder();
+
+    updateFieldStyle(t10);
+    updateFieldStyle(t50);
+    updateFieldStyle(t90);
+
+    if (!isValidNumber(t0) || !isValidNumber(t10) || !isValidNumber(t50) || !isValidNumber(t90)) return;
+
+    const v0  = parseFloat(t0.value);
+    const v10 = parseFloat(t10.value);
+    const v50 = parseFloat(t50.value);
+    const v90 = parseFloat(t90.value);
+
+    if (v10 <= v0) t10.classList.add("invalid");
+    if (v50 <= v0) t50.classList.add("invalid");
+    if (v90 <= v0) t90.classList.add("invalid");
+
+    if (!(v10 < v50)) {
+        t10.classList.add("invalid");
+        t50.classList.add("invalid");
+    }
+
+    if (!(v50 < v90)) {
+        t50.classList.add("invalid");
+        t90.classList.add("invalid");
+    }
+
+    updateDerivedValues();
+}
+
+/* ---------------------------------------------------------
+   Relative Zeiten + kS, TT, TG
+--------------------------------------------------------- */
+function updateDerivedValues() {
+    if (!isValidNumber(t0) || !isValidNumber(t10) || !isValidNumber(t50) || !isValidNumber(t90)) {
+        kS.value = "";
+        TT.value = "";
+        TG.value = "";
+        return;
+    }
+
+    const v0  = parseFloat(t0.value);
+    const v10 = parseFloat(t10.value);
+    const v50 = parseFloat(t50.value);
+    const v90 = parseFloat(t90.value);
+
+    const t10_rel = v10 - v0;
+    const t50_rel = v50 - v0;
+    const t90_rel = v90 - v0;
+
+    if (isValidNumber(DY) && isValidNumber(DU) && parseFloat(DU.value) !== 0) {
+        kS.value = (parseFloat(DY.value) / parseFloat(DU.value)).toFixed(4);
+    } else {
+        kS.value = "";
+    }
+
+    TT.value = ((t10_rel - 0.046 * t90_rel) / 0.954).toFixed(4);
+    TG.value = ((9.491 * t10_rel + 1.443 * t50_rel + 0.434 * t90_rel) / 3).toFixed(4);
+}
+
+/* ---------------------------------------------------------
+   Excel einlesen
+--------------------------------------------------------- */
+excelInput.addEventListener("change", handleExcelFile);
+
+function handleExcelFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    console.log("Excel geladen:", file.name);
+
+    fileName = file.name.replace(/\.[^/.]+$/, "");
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        parseExcelStructure(rows);
+        console.log("Excel-Struktur erkannt:", rows.length, "Zeilen");
+        fileInfo.innerText = "Geladen: " + file.name;
+        plotData();
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+
+
+/* ---------------------------------------------------------
+   Struktur A/B/C erkennen
+--------------------------------------------------------- */
+function parseExcelStructure(rows) {
+    timeData = [];
+    yData = [];
+    uData = [];
+    systemName = "";
+    varNames = {};
+    units = {};
+
+    const first = rows[0];
+    const second = rows[1];
+    const third = rows[2];
+
+    const isC =
+        first && typeof first[0] === "string" &&
+        second && typeof second[0] === "string" &&
+        third;
+
+    if (isC) {
+        systemName = first[0];
+        varNames.time = second[0] || "Zeit";
+        varNames.y    = second[1] || "Y";
+        varNames.u    = second[2] || "U";
+
+        units.time = third[0] || "";
+        units.y    = third[1] || "";
+        units.u    = third[2] || "";
+
+        for (let i = 3; i < rows.length; i++) {
+            const r = rows[i];
+            if (!r || r.length < 2) continue;
+            timeData.push(r[0]);
+            yData.push(r[1]);
+            if (r.length >= 3) uData.push(r[2]);
+        }
+        return;
+    }
+
+    const hasU = rows[0] && rows[0].length >= 3;
+
+    for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r || r.length < 2) continue;
+        timeData.push(r[0]);
+        yData.push(r[1]);
+        if (hasU) uData.push(r[2]);
+    }
+
+    systemName = fileName;
+    varNames = { time: "Zeit", y: "Y", u: hasU ? "U" : null };
+    units = { time: "", y: "", u: "" };
+}
+
+/* ---------------------------------------------------------
+   Plot mit Chart.js
+--------------------------------------------------------- */
+let chart = null;
+
+function plotData() {
+    console.log("plotData() wurde aufgerufen");
+
+    const ctx = plotCanvas.getContext("2d");
+
+    if (chart) chart.destroy();
+    console.log("timeData:", timeData);
+    console.log("yData:", yData);
+    console.log("uData:", uData);
+
+    chart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: timeData,
+            datasets: [
+                {
+                    label: varNames.y + (units.y ? " [" + units.y + "]" : ""),
+                    data: yData,
+                    borderColor: "blue",
+                    fill: false
+                },
+                ...(uData.length > 0 ? [{
+                    label: varNames.u + (units.u ? " [" + units.u + "]" : ""),
+                    data: uData,
+                    borderColor: "red",
+                    fill: false
+                }] : [])
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: systemName
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: varNames.time + (units.time ? " [" + units.time + "]" : "")
+                    }
+                }
+            }
+        }
+    });
+}
+
+/* ---------------------------------------------------------
+   Initiale Berechnung
+--------------------------------------------------------- */
+updateDY();
+updateDU();
+updateT0();
+updateXvalues();
+updateTimeOrder();
+updateDerivedValues();
+
 </script>
+
 
 </body>
 </html>
