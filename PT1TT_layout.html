@@ -96,6 +96,9 @@
             background: #ffcccc !important;
             border-color: #ff4444 !important;
         }
+
+        
+
     </style>
 </head>
 
@@ -121,12 +124,15 @@
             </div>
 
             <div class="field-row-compact">
-                <label for="UA">UA</label>
-                <input type="number" id="UA" value="0.00" step="0.01">
-                <label for="UE">UE</label>
-                <input type="number" id="UE" value="1.00" step="0.01">
-                <label for="DU">DU</label>
-                <input type="number" id="DU" class="output" value="1.00" readonly>
+                <label for="YA">YA</label>
+                <input type="number" id="YA" value="0.00" step="0.01">
+
+                <label for="YE">YE</label>
+                <input type="number" id="YE" value="1.00" step="0.01">
+
+                <label for="DY">DY</label>
+                <input type="number" id="DY" class="output" value="1.00" readonly>
+
             </div>
 
             <div class="field-row-single">
@@ -219,9 +225,10 @@ const XA = document.getElementById("XA");
 const XE = document.getElementById("XE");
 const DX = document.getElementById("DX");
 
-const UA = document.getElementById("UA");
-const UE = document.getElementById("UE");
-const DU = document.getElementById("DU");
+const YA = document.getElementById("YA");
+const YE = document.getElementById("YE");
+const DY = document.getElementById("DY");
+
 
 const t0  = document.getElementById("t0");
 const t10 = document.getElementById("t10");
@@ -288,22 +295,23 @@ function updateDX() {
 }
 
 /* ---------------------------------------------------------
-   DU = UE - UA
+   DY = YE - YA
 --------------------------------------------------------- */
-function updateDU() {
-    updateFieldStyle(UA);
-    updateFieldStyle(UE);
+function updateDY() {
+    updateFieldStyle(YA);
+    updateFieldStyle(YE);
 
-    if (isValidNumber(UA) && isValidNumber(UE)) {
-        const ua = parseFloat(UA.value);
-        const ue = parseFloat(UE.value);
-        DU.value = (ue - ua).toFixed(2);
+    if (isValidNumber(YA) && isValidNumber(YE)) {
+        const ya = parseFloat(YA.value);
+        const ye = parseFloat(YE.value);
+        DY.value = (ye - ya).toFixed(2);
     } else {
-        DU.value = "";
+        DY.value = "";
     }
 
     updateDerivedValues();
 }
+
 
 /* ---------------------------------------------------------
    X10/X50/X90 berechnen
@@ -391,16 +399,18 @@ function updateDerivedValues() {
     const t50_rel = t50v - t0v;
     const t90_rel = t90v - t0v;
 
-    if (isValidNumber(DX) && isValidNumber(DU) && parseFloat(DU.value) !== 0) {
-        kS.value = (parseFloat(DX.value) / parseFloat(DU.value)).toFixed(4);
+    if (isValidNumber(DX) && isValidNumber(DY) && parseFloat(DY.value) !== 0) {
+        kS.value = (parseFloat(DX.value) / parseFloat(DY.value)).toFixed(4);
     } else {
         kS.value = "";
     }
 
+
     TT.value = ((t10_rel - 0.046 * t90_rel) / 0.954).toFixed(3);
-    const t10_corr = t10_rel-TT.value;
-    const t50_corr = t50_rel - TT.value;
-    const t90_corr = t90_rel - TT.value;
+    const tt = parseFloat(TT.value);
+    const t10_corr = t10_rel - tt;
+    const t50_corr = t50_rel - tt;
+    const t90_corr = t90_rel - tt;
     TG.value = ((9.491 * t10_corr + 1.443 * t50_corr + 0.434 * t90_corr) / 3).toFixed(3);
 }
 
@@ -411,7 +421,7 @@ function computeModelResponse() {
     const XM = [];
 
     const xa = parseFloat(XA.value);
-    const du = parseFloat(DU.value);
+    const dy = parseFloat(DY.value);
     const ks = parseFloat(kS.value);
     const tt = parseFloat(TT.value);
     const tg = parseFloat(TG.value);
@@ -426,7 +436,7 @@ function computeModelResponse() {
             XM.push(xa);
         } else {
             const exponent = -(t - tDelay) / tg;
-            XM.push(xa + ks * du * (1 - Math.exp(exponent)));
+            XM.push(xa + ks * dy * (1 - Math.exp(exponent)));
         }
     }
 
@@ -634,8 +644,9 @@ function plotData() {
 XA.addEventListener("input", () => { updateDX(); plotData(); });
 XE.addEventListener("input", () => { updateDX(); plotData(); });
 
-UA.addEventListener("input", () => { updateDU(); plotData(); });
-UE.addEventListener("input", () => { updateDU(); plotData(); });
+YA.addEventListener("input", () => { updateDY(); plotData(); });
+YE.addEventListener("input", () => { updateDY(); plotData(); });
+
 
 t0.addEventListener("input", () => { updateTimeOrder(); plotData(); });
 t10.addEventListener("input", () => { updateTimeOrder(); plotData(); });
@@ -646,7 +657,7 @@ t90.addEventListener("input", () => { updateTimeOrder(); plotData(); });
    Initiale Berechnung + Plot
 --------------------------------------------------------- */
 updateDX();
-updateDU();
+updateDY();
 updateXvalues();
 updateTimeOrder();
 updateDerivedValues();
