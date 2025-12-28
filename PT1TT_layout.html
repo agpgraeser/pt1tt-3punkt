@@ -250,8 +250,8 @@ const fileInfo   = document.getElementById("fileInfo");
    Datencontainer für Excel
 --------------------------------------------------------- */
 let timeData = [];
+let xData = [];
 let yData = [];
-let uData = [];
 let systemName = "";
 let varNames = {};
 let units = {};
@@ -472,16 +472,18 @@ function handleExcelFile(event) {
 
 /* ---------------------------------------------------------
    Struktur A/B/C erkennen
+   und Daten in timeData, xData, yData ablegen
 --------------------------------------------------------- */
 function parseExcelStructure(rows) {
     timeData = [];
-    yData = [];
-    uData = [];
+    xData = [];   // 
+    yData = [];   // 
 
     const first = rows[0];
     const second = rows[1];
     const third = rows[2];
 
+    // Struktur C: 3 Kopfzeilen (Name, Variablen, Einheiten)
     const isC =
         first && typeof first[0] === "string" &&
         second && typeof second[0] === "string" &&
@@ -489,60 +491,110 @@ function parseExcelStructure(rows) {
 
     if (isC) {
         systemName = first[0];
+
         varNames.time = second[0] || "Zeit";
-        varNames.y    = second[1] || "Y";
-        varNames.u    = second[2] || "U";
+        varNames.x    = second[1] || "X";   // Ausgang
+        varNames.y    = second[2] || "Y";   // Eingang
 
         units.time = third[0] || "";
-        units.y    = third[1] || "";
-        units.u    = third[2] || "";
+        units.x    = third[1] || "";
+        units.y    = third[2] || "";
 
         for (let i = 3; i < rows.length; i++) {
             const r = rows[i];
             if (!r || r.length < 2) continue;
+
             timeData.push(r[0]);
-            yData.push(r[1]);
-            if (r.length >= 3) uData.push(r[2]);
+            xData.push(r[1]);       // Ausgang
+            if (r.length >= 3) yData.push(r[2]);  // Eingang
         }
         return;
     }
 
-    const hasU = rows[0] && rows[0].length >= 3;
+    /* ---------------------------------------------------------
+       Struktur A/B: 1 Kopfzeile oder keine
+       Spalten: Zeit | X | Y?
+    --------------------------------------------------------- */
+    const hasY = rows[0] && rows[0].length >= 3;
 
     for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
         if (!r || r.length < 2) continue;
+
         timeData.push(r[0]);
-        yData.push(r[1]);
-        if (hasU) uData.push(r[2]);
+        xData.push(r[1]);          // Ausgang
+        if (hasY) yData.push(r[2]); // Eingang
     }
 
     systemName = fileName;
-    varNames = { time: "Zeit", y: "Y", u: hasU ? "U" : null };
-    units = { time: "", y: "", u: "" };
+
+    varNames = {
+        time: "Zeit",
+        x: "X",
+        y: hasY ? "Y" : null
+    };
+
+    units = {
+        time: "",
+        x: "",
+        y: ""
+    };
 }
+
 
 /* ---------------------------------------------------------
    Plot-Funktion
 --------------------------------------------------------- */
+function computeMinMax(arr) {
+    if (!arr || arr.length === 0) {
+        return { min: null, max: null };
+    }
+    return {
+        min: Math.min(...arr),
+        max: Math.max(...arr)
+    };
+}
+
+
+
 function plotData() {
     if (timeData.length === 0) return;
 
+    /* ---------------------------------------------------------
+       1) Min/Max berechnen
+    --------------------------------------------------------- */
+    const timeStats = computeMinMax(timeData);
+    const xStats    = computeMinMax(xData);
+    const yStats    = computeMinMax(yData);
+
+    const tMin = timeStats.min;
+    const tMax = timeStats.max;
+    const xMin = xStats.min;
+    const xMax = xStats.max;
+    const yMin = yStats.min;
+    const yMax = yStats.max;
+
+    /* ---------------------------------------------------------
+       2) Modellantwort berechnen
+    --------------------------------------------------------- */
     const XM = computeModelResponse();
+
+    /* ---------------------------------------------------------
+       3) Plot-Traces
+    --------------------------------------------------------- */
+    const traceX = {
+        x: timeData,
+        y: xData,
+        mode: "lines",
+        name: "Messwert X",
+        line: { width: 2, color: "blue" }
+    };
 
     const traceY = {
         x: timeData,
         y: yData,
         mode: "lines",
-        name: "Messwert Y",
-        line: { width: 2, color: "blue" }
-    };
-
-    const traceU = {
-        x: timeData,
-        y: uData,
-        mode: "lines",
-        name: "Eingang U",
+        name: "Eingang Y",
         line: { width: 2, color: "red" }
     };
 
@@ -551,9 +603,12 @@ function plotData() {
         y: XM,
         mode: "lines",
         name: "Modellantwort",
-        line: { width: 2, color: "orange", dash: "dot" }
+        line: { width: 4, color: "red", dash: "dot" }
     };
 
+    /* ---------------------------------------------------------
+       4) Parameter aus UI lesen
+    --------------------------------------------------------- */
     const t0v  = parseFloat(t0.value);
     const t10v = parseFloat(t10.value);
     const t50v = parseFloat(t50.value);
@@ -563,24 +618,46 @@ function plotData() {
     const X50v = parseFloat(X50.value);
     const X90v = parseFloat(X90.value);
 
-    const yMin = Math.min(...yData);
-    const xMin = Math.min(...timeData);
+    const xa = parseFloat(XA.value);
+    const xe = parseFloat(XE.value);
 
+    /* ---------------------------------------------------------
+       5) Shapes definieren
+    --------------------------------------------------------- */
     const shapes = [
-        // t0
+
+        // vertikale Linie t0
         {
             type: "line",
             x0: t0v,
             x1: t0v,
-            y0: yMin,
-            y1: Math.max(...yData),
-            line: { color: "red", width: 2, dash: "dot" }
+            y0: xe,
+            y1: xa,
+            line: { color: "orange", width: 2, dash: "dot" }
         },
 
-        // horizontale Linien
+        // horizontale Linien XA / XE
         {
             type: "line",
-            x0: xMin,
+            x0: tMin,
+            x1: tMax,
+            y0: xa,
+            y1: xa,
+            line: { color: "red", width: 2, dash: "dash" }
+        },
+        {
+            type: "line",
+            x0: tMin,
+            x1: tMax,
+            y0: xe,
+            y1: xe,
+            line: { color: "red", width: 2, dash: "dash" }
+        },
+
+        // horizontale Linien X10 / X50 / X90
+        {
+            type: "line",
+            x0: tMin,
             x1: t10v,
             y0: X10v,
             y1: X10v,
@@ -588,7 +665,7 @@ function plotData() {
         },
         {
             type: "line",
-            x0: xMin,
+            x0: tMin,
             x1: t50v,
             y0: X50v,
             y1: X50v,
@@ -596,47 +673,51 @@ function plotData() {
         },
         {
             type: "line",
-            x0: xMin,
+            x0: tMin,
             x1: t90v,
             y0: X90v,
             y1: X90v,
             line: { color: "green", width: 1, dash: "dash" }
         },
 
-        // vertikale Linien
+        // vertikale Linien t10 / t50 / t90
         {
             type: "line",
             x0: t10v,
             x1: t10v,
-            y0: yMin,
+            y0: xa,
             y1: X10v,
-            line: { color: "blue", width: 1 }
+            line: { color: "green", width: 1, dash: "dash" }
         },
         {
             type: "line",
             x0: t50v,
             x1: t50v,
-            y0: yMin,
+            y0: xa,
             y1: X50v,
-            line: { color: "blue", width: 1 }
+            line: { color: "green", width: 1, dash: "dash" }
         },
         {
             type: "line",
             x0: t90v,
             x1: t90v,
-            y0: yMin,
+            y0: xa,
             y1: X90v,
-            line: { color: "blue", width: 1 }
+            line: { color: "green", width: 1, dash: "dash" }
         }
     ];
 
-    Plotly.newPlot("plotArea", [traceY, traceU, traceModel], {
+    /* ---------------------------------------------------------
+       6) Plot erzeugen
+    --------------------------------------------------------- */
+    Plotly.newPlot("plotArea", [traceX, traceY, traceModel], {
         margin: { t: 20, r: 20, b: 40, l: 50 },
         xaxis: { title: "Zeit" },
         yaxis: { title: "Wert" },
         shapes: shapes
     });
 }
+
 
 /* ---------------------------------------------------------
    Event‑Listener
