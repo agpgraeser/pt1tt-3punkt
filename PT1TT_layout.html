@@ -204,24 +204,20 @@
 
 </div>
 <!-- ========================= -->
-<!-- 1) Externe Bibliotheken --> 
+<!-- 1) Externe Bibliotheken -->
 <!-- ========================= -->
-<!-- Plotly -->
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
-
-<!-- XLSX für Excel-Import -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
 
 <script>
 console.log("JS geladen");
+
 /* ---------------------------------------------------------
    DOM-Referenzen
 --------------------------------------------------------- */
 const XA = document.getElementById("XA");
 const XE = document.getElementById("XE");
 const DX = document.getElementById("DX");
-
 
 const UA = document.getElementById("UA");
 const UE = document.getElementById("UE");
@@ -240,7 +236,6 @@ const kS  = document.getElementById("kS");
 const TT  = document.getElementById("TT");
 const TG  = document.getElementById("TG");
 
-const plotCanvas = document.getElementById("plotCanvas");
 const excelInput = document.getElementById("excelFile");
 const fileInfo   = document.getElementById("fileInfo");
 
@@ -259,25 +254,15 @@ let fileName = "";
    Hilfsfunktionen
 --------------------------------------------------------- */
 function isValidNumber(el) {
+    if (!el) return false;
     const v = parseFloat(el.value);
     return !(isNaN(v) || !isFinite(v));
 }
 
 function updateFieldStyle(el) {
+    if (!el) return;
     if (isValidNumber(el)) el.classList.remove("invalid");
     else el.classList.add("invalid");
-}
-
-/* ---------------------------------------------------------
-   t0 prüfen (gültig wenn >= 0)
---------------------------------------------------------- */
-function updateT0() {
-    const v = parseFloat(t0.value);
-    if (!isNaN(v) && isFinite(v) && v >= 0) {
-        t0.classList.remove("invalid");
-    } else {
-        t0.classList.add("invalid");
-    }
 }
 
 /* ---------------------------------------------------------
@@ -288,7 +273,9 @@ function updateDX() {
     updateFieldStyle(XE);
 
     if (isValidNumber(XA) && isValidNumber(XE)) {
-        DX.value = (parseFloat(XE.value) - parseFloat(XA.value)).toFixed(2);
+        const xa = parseFloat(XA.value);
+        const xe = parseFloat(XE.value);
+        DX.value = (xe - xa).toFixed(2);
         updateXvalues();
     } else {
         DX.value = "";
@@ -308,7 +295,9 @@ function updateDU() {
     updateFieldStyle(UE);
 
     if (isValidNumber(UA) && isValidNumber(UE)) {
-        DU.value = (parseFloat(UE.value) - parseFloat(UA.value)).toFixed(2);
+        const ua = parseFloat(UA.value);
+        const ue = parseFloat(UE.value);
+        DU.value = (ue - ua).toFixed(2);
     } else {
         DU.value = "";
     }
@@ -327,47 +316,60 @@ function updateXvalues() {
         return;
     }
 
-    const XA = parseFloat(XA.value);
-    const DX = parseFloat(DX.value);
+    const xa = parseFloat(XA.value);
+    const dx = parseFloat(DX.value);
 
-    X10.value = (XA + 0.1 * DX).toFixed(2);
-    X50.value = (XA + 0.5 * DX).toFixed(2);
-    X90.value = (XA + 0.9 * DX).toFixed(2);
+    X10.value = (xa + 0.1 * dx).toFixed(2);
+    X50.value = (xa + 0.5 * dx).toFixed(2);
+    X90.value = (xa + 0.9 * dx).toFixed(2);
 }
 
 /* ---------------------------------------------------------
    Zeitvalidierung
 --------------------------------------------------------- */
 function updateTimeOrder() {
-    updateT0();
-
+    updateFieldStyle(t0);
     updateFieldStyle(t10);
     updateFieldStyle(t50);
     updateFieldStyle(t90);
 
-    if (!isValidNumber(t0) || !isValidNumber(t10) || !isValidNumber(t50) || !isValidNumber(t90)) return;
+    if (!isValidNumber(t0) || !isValidNumber(t10) || !isValidNumber(t50) || !isValidNumber(t90))
+        return;
 
-    const v0  = parseFloat(t0.value);
-    const v10 = parseFloat(t10.value);
-    const v50 = parseFloat(t50.value);
-    const v90 = parseFloat(t90.value);
+    const t0v  = parseFloat(t0.value);
+    const t10v = parseFloat(t10.value);
+    const t50v = parseFloat(t50.value);
+    const t90v = parseFloat(t90.value);
 
-    if (v10 <= v0) t10.classList.add("invalid");
-    if (v50 <= v0) t50.classList.add("invalid");
-    if (v90 <= v0) t90.classList.add("invalid");
+    // 🔴 Prüfung: t0 >= 0
+    if (t0v < 0) {
+        t0.classList.add("invalid");
+    }
 
-    if (!(v10 < v50)) {
+    // 🔴 Prüfung: t10 > t0
+    if (t10v <= t0v) t10.classList.add("invalid");
+
+    // 🔴 Prüfung: t50 > t0
+    if (t50v <= t0v) t50.classList.add("invalid");
+
+    // 🔴 Prüfung: t90 > t0
+    if (t90v <= t0v) t90.classList.add("invalid");
+
+    // 🔴 Prüfung: t10 < t50
+    if (!(t10v < t50v)) {
         t10.classList.add("invalid");
         t50.classList.add("invalid");
     }
 
-    if (!(v50 < v90)) {
+    // 🔴 Prüfung: t50 < t90
+    if (!(t50v < t90v)) {
         t50.classList.add("invalid");
         t90.classList.add("invalid");
     }
 
     updateDerivedValues();
 }
+
 
 /* ---------------------------------------------------------
    Relative Zeiten + kS, TT, TG
@@ -380,14 +382,14 @@ function updateDerivedValues() {
         return;
     }
 
-    const v0  = parseFloat(t0.value);
-    const v10 = parseFloat(t10.value);
-    const v50 = parseFloat(t50.value);
-    const v90 = parseFloat(t90.value);
+    const t0v  = parseFloat(t0.value);
+    const t10v = parseFloat(t10.value);
+    const t50v = parseFloat(t50.value);
+    const t90v = parseFloat(t90.value);
 
-    const t10_rel = v10 - v0;
-    const t50_rel = v50 - v0;
-    const t90_rel = v90 - v0;
+    const t10_rel = t10v - t0v;
+    const t50_rel = t50v - t0v;
+    const t90_rel = t90v - t0v;
 
     if (isValidNumber(DX) && isValidNumber(DU) && parseFloat(DU.value) !== 0) {
         kS.value = (parseFloat(DX.value) / parseFloat(DU.value)).toFixed(4);
@@ -397,42 +399,39 @@ function updateDerivedValues() {
 
     TT.value = ((t10_rel - 0.046 * t90_rel) / 0.954).toFixed(3);
     const t10_corr = t10_rel-TT.value;
-    const t50_corr = t50_rel-TT.value;
-    const t90_corr = t90_rel-TT.value;
+    const t50_corr = t50_rel - TT.value;
+    const t90_corr = t90_rel - TT.value;
     TG.value = ((9.491 * t10_corr + 1.443 * t50_corr + 0.434 * t90_corr) / 3).toFixed(3);
 }
+
 /* ---------------------------------------------------------
-   Zeitantwort PT1TT-Modell berechnen
+   Modellantwort (PT1TT)
 --------------------------------------------------------- */
 function computeModelResponse() {
     const XM = [];
 
-    const XA_v = parseFloat(XA.value);
-    const DU_v = parseFloat(DU.value);
-    const kS_v = parseFloat(kS.value);
-    const TT_v = parseFloat(TT.value);
-    const TG_v = parseFloat(TG.value);
-    const t0_v = parseFloat(t0.value);
+    const xa = parseFloat(XA.value);
+    const du = parseFloat(DU.value);
+    const ks = parseFloat(kS.value);
+    const tt = parseFloat(TT.value);
+    const tg = parseFloat(TG.value);
+    const t0v = parseFloat(t0.value);
 
-    const tDelay = t0_v + TT_v;
+    const tDelay = t0v + tt;
 
     for (let i = 0; i < timeData.length; i++) {
         const t = timeData[i];
 
         if (t <= tDelay) {
-            XM.push(XA_v);
+            XM.push(xa);
         } else {
-            const exponent = -(t - tDelay) / TG_v;
-            const value = XA_v + kS_v * DU_v * (1 - Math.exp(exponent));
-            XM.push(value);
+            const exponent = -(t - tDelay) / tg;
+            XM.push(xa + ks * du * (1 - Math.exp(exponent)));
         }
     }
 
     return XM;
 }
-
-
-
 
 /* ---------------------------------------------------------
    Excel einlesen
@@ -442,8 +441,6 @@ excelInput.addEventListener("change", handleExcelFile);
 function handleExcelFile(event) {
     const file = event.target.files[0];
     if (!file) return;
-
-    console.log("Excel geladen:", file.name);
 
     fileName = file.name.replace(/\.[^/.]+$/, "");
 
@@ -456,7 +453,6 @@ function handleExcelFile(event) {
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
         parseExcelStructure(rows);
-        console.log("Excel-Struktur erkannt:", rows.length, "Zeilen");
         fileInfo.innerText = "Geladen: " + file.name;
         plotData();
     };
@@ -464,23 +460,18 @@ function handleExcelFile(event) {
     reader.readAsArrayBuffer(file);
 }
 
-
-
 /* ---------------------------------------------------------
    Struktur A/B/C erkennen
 --------------------------------------------------------- */
-    function parseExcelStructure(rows) {
+function parseExcelStructure(rows) {
     timeData = [];
     yData = [];
     uData = [];
-    systemName = "";
-    varNames = {};
-    units = {};
 
     const first = rows[0];
     const second = rows[1];
     const third = rows[2];
-                                                                        
+
     const isC =
         first && typeof first[0] === "string" &&
         second && typeof second[0] === "string" &&
@@ -522,10 +513,12 @@ function handleExcelFile(event) {
 }
 
 /* ---------------------------------------------------------
-   Daten plotten    
+   Plot-Funktion
 --------------------------------------------------------- */
 function plotData() {
-    console.log("plotData wird ausgeführt");
+    if (timeData.length === 0) return;
+
+    const XM = computeModelResponse();
 
     const traceY = {
         x: timeData,
@@ -543,8 +536,6 @@ function plotData() {
         line: { width: 2, color: "red" }
     };
 
-    const XM = computeModelResponse();
-
     const traceModel = {
         x: timeData,
         y: XM,
@@ -553,8 +544,6 @@ function plotData() {
         line: { width: 2, color: "orange", dash: "dot" }
     };
 
-
-    // Werte aus Inputs holen
     const t0v  = parseFloat(t0.value);
     const t10v = parseFloat(t10.value);
     const t50v = parseFloat(t50.value);
@@ -565,156 +554,106 @@ function plotData() {
     const X90v = parseFloat(X90.value);
 
     const yMin = Math.min(...yData);
-    const yMax = Math.max(...yData);
     const xMin = Math.min(...timeData);
-    const xMax = Math.max(...timeData);
 
-const shapes = [
-    // t0
-    {
-        type: "line",
-        x0: t0v,
-        x1: t0v,
-        y0: yMin,
-        y1: Math.max(...yData),
-        line: { color: "red", width: 2, dash: "dot" }
-    },
+    const shapes = [
+        // t0
+        {
+            type: "line",
+            x0: t0v,
+            x1: t0v,
+            y0: yMin,
+            y1: Math.max(...yData),
+            line: { color: "red", width: 2, dash: "dot" }
+        },
 
-    // horizontale Linien
-    {
-        type: "line",
-        x0: xMin,
-        x1: xMax,
-        y0: yMin,
-        y1: yMin,
-        line: { color: "red", width: 2, dash: "dash" }
-    },
-    {
-        type: "line",
-        x0: xMin,
-        x1: xMax,
-        y0: yMax,
-        y1: yMax,
-        line: { color: "red", width: 2, dash: "dash" }
-    },
+        // horizontale Linien
+        {
+            type: "line",
+            x0: xMin,
+            x1: t10v,
+            y0: X10v,
+            y1: X10v,
+            line: { color: "green", width: 1, dash: "dash" }
+        },
+        {
+            type: "line",
+            x0: xMin,
+            x1: t50v,
+            y0: X50v,
+            y1: X50v,
+            line: { color: "green", width: 1, dash: "dash" }
+        },
+        {
+            type: "line",
+            x0: xMin,
+            x1: t90v,
+            y0: X90v,
+            y1: X90v,
+            line: { color: "green", width: 1, dash: "dash" }
+        },
 
-    {
-        type: "line",
-        x0: xMin,
-        x1: t10v,
-        y0: X10v,
-        y1: X10v,
-        line: { color: "green", width: 2, dash: "dash" }
-    },
-    {
-        type: "line",
-        x0: xMin,
-        x1: t50v,
-        y0: X50v,
-        y1: X50v,
-        line: { color: "green", width: 2, dash: "dash" }
-    },
-    {
-        type: "line",
-        x0: xMin,
-        x1: t90v,
-        y0: X90v,
-        y1: X90v,
-        line: { color: "green", width: 2, dash: "dash" }
-    },
-
-    // vertikale Linien
-    {
-        type: "line",
-        x0: t10v,
-        x1: t10v,
-        y0: yMin,
-        y1: X10v,
-        line: { color: "green", width: 2, dash: "dash" }
-    },
-    {
-        type: "line",
-        x0: t50v,
-        x1: t50v,
-        y0: yMin,
-        y1: X50v,
-        line: { color: "green", width: 2, dash: "dash"}
-    },
-    {
-        type: "line",
-        x0: t90v,
-        x1: t90v,
-        y0: yMin,
-        y1: X90v,
-        line: { color: "green", width: 2, dash: "dash"}
-    }
-];
+        // vertikale Linien
+        {
+            type: "line",
+            x0: t10v,
+            x1: t10v,
+            y0: yMin,
+            y1: X10v,
+            line: { color: "blue", width: 1 }
+        },
+        {
+            type: "line",
+            x0: t50v,
+            x1: t50v,
+            y0: yMin,
+            y1: X50v,
+            line: { color: "blue", width: 1 }
+        },
+        {
+            type: "line",
+            x0: t90v,
+            x1: t90v,
+            y0: yMin,
+            y1: X90v,
+            line: { color: "blue", width: 1 }
+        }
+    ];
 
     Plotly.newPlot("plotArea", [traceY, traceU, traceModel], {
         margin: { t: 20, r: 20, b: 40, l: 50 },
         xaxis: { title: "Zeit" },
-        XAxis: { title: "Wert" },
+        yaxis: { title: "Wert" },
         shapes: shapes
     });
 }
+
 /* ---------------------------------------------------------
    Event‑Listener
 --------------------------------------------------------- */
-XA.addEventListener("input", () => {
-    updateDX();
-    plotData();
-});
+XA.addEventListener("input", () => { updateDX(); plotData(); });
+XE.addEventListener("input", () => { updateDX(); plotData(); });
 
-XE.addEventListener("input", () => {
-    updateDX();
-    plotData();
-});
+UA.addEventListener("input", () => { updateDU(); plotData(); });
+UE.addEventListener("input", () => { updateDU(); plotData(); });
 
-UA.addEventListener("input", () => {
-    updateDU();
-    plotData();
-});
-
-UE.addEventListener("input", () => {
-    updateDU();
-    plotData();
-});
-
-t0.addEventListener("input", () => {
-    updateTimeOrder();
-    plotData();
-});
-
-t10.addEventListener("input", () => {
-    updateTimeOrder();
-    plotData();
-});
-
-t50.addEventListener("input", () => {
-    updateTimeOrder();
-    plotData();
-});
-
-t90.addEventListener("input", () => {
-    updateTimeOrder();
-    plotData();
-});
-
+t0.addEventListener("input", () => { updateTimeOrder(); plotData(); });
+t10.addEventListener("input", () => { updateTimeOrder(); plotData(); });
+t50.addEventListener("input", () => { updateTimeOrder(); plotData(); });
+t90.addEventListener("input", () => { updateTimeOrder(); plotData(); });
 
 /* ---------------------------------------------------------
-   Initiale Berechnung
+   Initiale Berechnung + Plot
 --------------------------------------------------------- */
 updateDX();
 updateDU();
-updateT0();
 updateXvalues();
 updateTimeOrder();
 updateDerivedValues();
-/* --------------------------------------------------------- 
-    Initialer Aufruf 
---------------------------------------------------------- */ 
 plotData();
+
 </script>
+
 
 
 </body>
