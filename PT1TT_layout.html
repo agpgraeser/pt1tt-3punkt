@@ -112,12 +112,12 @@
             <div class="panel-title">PT1TT-Parameter berechnen</div>
 
             <div class="field-row-compact">
-                <label for="YA">YA</label>
-                <input type="number" id="YA" value="0.00" step="0.01">
-                <label for="YE">YE</label>
-                <input type="number" id="YE" value="1.00" step="0.01">
-                <label for="DY">DY</label>
-                <input type="number" id="DY" class="output" value="1.00" readonly>
+                <label for="XA">XA</label>
+                <input type="number" id="XA" value="0.00" step="0.01">
+                <label for="XE">XE</label>
+                <input type="number" id="XE" value="1.00" step="0.01">
+                <label for="DX">DX</label>
+                <input type="number" id="DX" class="output" value="1.00" readonly>
             </div>
 
             <div class="field-row-compact">
@@ -218,9 +218,10 @@ console.log("JS geladen");
 /* ---------------------------------------------------------
    DOM-Referenzen
 --------------------------------------------------------- */
-const YA = document.getElementById("YA");
-const YE = document.getElementById("YE");
-const DY = document.getElementById("DY");
+const XA = document.getElementById("XA");
+const XE = document.getElementById("XE");
+const DX = document.getElementById("DX");
+
 
 const UA = document.getElementById("UA");
 const UE = document.getElementById("UE");
@@ -280,17 +281,17 @@ function updateT0() {
 }
 
 /* ---------------------------------------------------------
-   DY = YE - YA
+   DX = XE - XA
 --------------------------------------------------------- */
-function updateDY() {
-    updateFieldStyle(YA);
-    updateFieldStyle(YE);
+function updateDX() {
+    updateFieldStyle(XA);
+    updateFieldStyle(XE);
 
-    if (isValidNumber(YA) && isValidNumber(YE)) {
-        DY.value = (parseFloat(YE.value) - parseFloat(YA.value)).toFixed(2);
+    if (isValidNumber(XA) && isValidNumber(XE)) {
+        DX.value = (parseFloat(XE.value) - parseFloat(XA.value)).toFixed(2);
         updateXvalues();
     } else {
-        DY.value = "";
+        DX.value = "";
         X10.value = "";
         X50.value = "";
         X90.value = "";
@@ -319,19 +320,19 @@ function updateDU() {
    X10/X50/X90 berechnen
 --------------------------------------------------------- */
 function updateXvalues() {
-    if (!isValidNumber(YA) || !isValidNumber(DY)) {
+    if (!isValidNumber(XA) || !isValidNumber(DX)) {
         X10.value = "";
         X50.value = "";
         X90.value = "";
         return;
     }
 
-    const ya = parseFloat(YA.value);
-    const dy = parseFloat(DY.value);
+    const XA = parseFloat(XA.value);
+    const DX = parseFloat(DX.value);
 
-    X10.value = (ya + 0.1 * dy).toFixed(2);
-    X50.value = (ya + 0.5 * dy).toFixed(2);
-    X90.value = (ya + 0.9 * dy).toFixed(2);
+    X10.value = (XA + 0.1 * DX).toFixed(2);
+    X50.value = (XA + 0.5 * DX).toFixed(2);
+    X90.value = (XA + 0.9 * DX).toFixed(2);
 }
 
 /* ---------------------------------------------------------
@@ -388,15 +389,50 @@ function updateDerivedValues() {
     const t50_rel = v50 - v0;
     const t90_rel = v90 - v0;
 
-    if (isValidNumber(DY) && isValidNumber(DU) && parseFloat(DU.value) !== 0) {
-        kS.value = (parseFloat(DY.value) / parseFloat(DU.value)).toFixed(4);
+    if (isValidNumber(DX) && isValidNumber(DU) && parseFloat(DU.value) !== 0) {
+        kS.value = (parseFloat(DX.value) / parseFloat(DU.value)).toFixed(4);
     } else {
         kS.value = "";
     }
 
-    TT.value = ((t10_rel - 0.046 * t90_rel) / 0.954).toFixed(4);
-    TG.value = ((9.491 * t10_rel + 1.443 * t50_rel + 0.434 * t90_rel) / 3).toFixed(4);
+    TT.value = ((t10_rel - 0.046 * t90_rel) / 0.954).toFixed(3);
+    const t10_corr = t10_rel-TT.value;
+    const t50_corr = t50_rel-TT.value;
+    const t90_corr = t90_rel-TT.value;
+    TG.value = ((9.491 * t10_corr + 1.443 * t50_corr + 0.434 * t90_corr) / 3).toFixed(3);
 }
+/* ---------------------------------------------------------
+   Zeitantwort PT1TT-Modell berechnen
+--------------------------------------------------------- */
+function computeModelResponse() {
+    const XM = [];
+
+    const XA_v = parseFloat(XA.value);
+    const DU_v = parseFloat(DU.value);
+    const kS_v = parseFloat(kS.value);
+    const TT_v = parseFloat(TT.value);
+    const TG_v = parseFloat(TG.value);
+    const t0_v = parseFloat(t0.value);
+
+    const tDelay = t0_v + TT_v;
+
+    for (let i = 0; i < timeData.length; i++) {
+        const t = timeData[i];
+
+        if (t <= tDelay) {
+            XM.push(XA_v);
+        } else {
+            const exponent = -(t - tDelay) / TG_v;
+            const value = XA_v + kS_v * DU_v * (1 - Math.exp(exponent));
+            XM.push(value);
+        }
+    }
+
+    return XM;
+}
+
+
+
 
 /* ---------------------------------------------------------
    Excel einlesen
@@ -507,6 +543,17 @@ function plotData() {
         line: { width: 2, color: "red" }
     };
 
+    const XM = computeModelResponse();
+
+    const traceModel = {
+        x: timeData,
+        y: XM,
+        mode: "lines",
+        name: "Modellantwort",
+        line: { width: 2, color: "orange", dash: "dot" }
+    };
+
+
     // Werte aus Inputs holen
     const t0v  = parseFloat(t0.value);
     const t10v = parseFloat(t10.value);
@@ -557,7 +604,7 @@ const shapes = [
         x1: t10v,
         y0: X10v,
         y1: X10v,
-        line: { color: "green", width: 1, dash: "dash" }
+        line: { color: "green", width: 2, dash: "dash" }
     },
     {
         type: "line",
@@ -565,7 +612,7 @@ const shapes = [
         x1: t50v,
         y0: X50v,
         y1: X50v,
-        line: { color: "green", width: 1, dash: "dash" }
+        line: { color: "green", width: 2, dash: "dash" }
     },
     {
         type: "line",
@@ -573,7 +620,7 @@ const shapes = [
         x1: t90v,
         y0: X90v,
         y1: X90v,
-        line: { color: "green", width: 1, dash: "dash" }
+        line: { color: "green", width: 2, dash: "dash" }
     },
 
     // vertikale Linien
@@ -583,7 +630,7 @@ const shapes = [
         x1: t10v,
         y0: yMin,
         y1: X10v,
-        line: { color: "green", width: 1, dash: "dash" }
+        line: { color: "green", width: 2, dash: "dash" }
     },
     {
         type: "line",
@@ -591,7 +638,7 @@ const shapes = [
         x1: t50v,
         y0: yMin,
         y1: X50v,
-        line: { color: "green", width: 1 , dash: "dash"}
+        line: { color: "green", width: 2, dash: "dash"}
     },
     {
         type: "line",
@@ -599,27 +646,27 @@ const shapes = [
         x1: t90v,
         y0: yMin,
         y1: X90v,
-        line: { color: "green", width: 1 , dash: "dash"}
+        line: { color: "green", width: 2, dash: "dash"}
     }
 ];
 
-    Plotly.newPlot("plotArea", [traceY, traceU], {
+    Plotly.newPlot("plotArea", [traceY, traceU, traceModel], {
         margin: { t: 20, r: 20, b: 40, l: 50 },
         xaxis: { title: "Zeit" },
-        yaxis: { title: "Wert" },
+        XAxis: { title: "Wert" },
         shapes: shapes
     });
 }
 /* ---------------------------------------------------------
    Event‑Listener
 --------------------------------------------------------- */
-YA.addEventListener("input", () => {
-    updateDY();
+XA.addEventListener("input", () => {
+    updateDX();
     plotData();
 });
 
-YE.addEventListener("input", () => {
-    updateDY();
+XE.addEventListener("input", () => {
+    updateDX();
     plotData();
 });
 
@@ -657,7 +704,7 @@ t90.addEventListener("input", () => {
 /* ---------------------------------------------------------
    Initiale Berechnung
 --------------------------------------------------------- */
-updateDY();
+updateDX();
 updateDU();
 updateT0();
 updateXvalues();
