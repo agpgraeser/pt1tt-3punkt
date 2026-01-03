@@ -54,7 +54,7 @@
         .left-panel .field-row-compact {
             display: grid;
             grid-template-columns: auto 80px auto 80px auto 80px;
-            column-gap: 6px;
+            column-gap: 4px;
             row-gap: 4px;
             align-items: center;
             margin-bottom: 8px;
@@ -63,7 +63,7 @@
         .left-panel .field-row-single {
             display: grid;
             grid-template-columns: auto 80px;
-            column-gap: 6px;
+            column-gap: 4px;
             align-items: center;
             margin-bottom: 8px;
         }
@@ -196,6 +196,7 @@
         <!-- Weitere Einstellungen -->
         <div class="section">
             <div class="panel-title">Weitere Einstellungen (Platzhalter)</div>
+            <div id="excelPreview" style="font-size:0.85rem; color:#333; margin-top:8px;"></div>
         </div>
     </div> <!-- Ende left-panel -->
 
@@ -464,6 +465,7 @@ function handleExcelFile(event) {
 
         parseExcelStructure(rows);
         fileInfo.innerText = "Geladen: " + file.name;
+        showFirstThreeRows(rows);
         plotData();
     };
 
@@ -539,6 +541,33 @@ function parseExcelStructure(rows) {
         x: "",
         y: ""
     };
+}
+
+/* ---------------------------------------------------------
+   Show first three rows of the raw Excel input in the UI
+--------------------------------------------------------- */
+function showFirstThreeRows(rows) {
+    const preview = document.getElementById("excelPreview");
+    if (!preview) return;
+
+    const firstRows = (rows || []).slice(0, 3);
+    if (firstRows.length === 0) {
+        preview.innerText = "Keine Vorschau verfügbar.";
+        return;
+    }
+
+    let html = '<table style="border-collapse:collapse; width:100%;">';
+    for (let r = 0; r < firstRows.length; r++) {
+        const row = firstRows[r] || [];
+        html += '<tr>';
+        for (let c = 0; c < row.length; c++) {
+            const cell = row[c] !== undefined ? String(row[c]) : '';
+            html += '<td style="border:1px solid #e6e6e6; padding:6px; font-size:0.85rem;">' + cell + '</td>';
+        }
+        html += '</tr>';
+    }
+    html += '</table>';
+    preview.innerHTML = html;
 }
 
 
@@ -714,9 +743,52 @@ function plotData() {
         margin: { t: 20, r: 20, b: 40, l: 50 },
         xaxis: { title: "Zeit" },
         yaxis: { title: "Wert" },
-        shapes: shapes
-    });
-}
+        shapes: shapes,
+        annotations: [
+            {
+                x: t0v,
+                y: xa,
+                xref: "x",
+                yref: "y",
+                text: "t0",
+                showarrow: false,
+                yshift: -20,
+                font: { size: 12, color: "red" }
+            },
+            {
+                x: t10v,
+                y: xa,
+                xref: "x",
+                yref: "y",
+                text: "t10",
+                showarrow: false,
+                yshift: -20,
+                font: { size: 12, color: "blue" }
+            },
+            {
+                x: t50v,
+                y: xa,
+                xref: "x",
+                yref: "y",
+                text: "t50",
+                showarrow: false,
+                yshift: -20,
+                font: { size: 12, color: "blue" }
+            },
+            {
+                x: t90v,
+                y: xa,
+                xref: "x",
+                yref: "y",
+                text: "t90",
+                showarrow: false,
+                yshift: -20,
+                font: { size: 12, color: "blue" }
+            }
+        ]
+
+            });
+        }
 
 
 /* ---------------------------------------------------------
