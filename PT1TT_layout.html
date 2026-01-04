@@ -616,7 +616,9 @@ function plotData() {
         y: xData,
         mode: "lines",
         name: "Messwert X",
-        line: { width: 2, color: "blue" }
+        line: { width: 2, color: "blue" },
+        xaxis: "x1",
+        yaxis: "y1"
     };
 
     const traceY = {
@@ -624,7 +626,9 @@ function plotData() {
         y: yData,
         mode: "lines",
         name: "Eingang Y",
-        line: { width: 2, color: "red" }
+        line: { width: 2, color: "red" },
+        xaxis: "x2",
+        yaxis: "y2"
     };
 
     const traceModel = {
@@ -632,7 +636,9 @@ function plotData() {
         y: XM,
         mode: "lines",
         name: "Modellantwort",
-        line: { width: 4, color: "red", dash: "dot" }
+        line: { width: 4, color: "red", dash: "dot" },
+        xaxis: "x1",
+        yaxis: "y1"
     };
 
     /* ---------------------------------------------------------
@@ -651,7 +657,7 @@ function plotData() {
     const xe = parseFloat(XE.value);
 
     /* ---------------------------------------------------------
-       5) Shapes definieren
+       5) Shapes definieren (JETZT ist tMin/tMax verfügbar!)
     --------------------------------------------------------- */
     const shapes = [
 
@@ -662,6 +668,8 @@ function plotData() {
             x1: t0v,
             y0: xe,
             y1: xa,
+            xref: "x1",
+            yref: "y1",
             line: { color: "orange", width: 2, dash: "dot" }
         },
 
@@ -672,6 +680,8 @@ function plotData() {
             x1: tMax,
             y0: xa,
             y1: xa,
+            xref: "x1",
+            yref: "y1",
             line: { color: "red", width: 2, dash: "dash" }
         },
         {
@@ -680,6 +690,8 @@ function plotData() {
             x1: tMax,
             y0: xe,
             y1: xe,
+            xref: "x1",
+            yref: "y1",
             line: { color: "red", width: 2, dash: "dash" }
         },
 
@@ -690,6 +702,8 @@ function plotData() {
             x1: t10v,
             y0: X10v,
             y1: X10v,
+            xref: "x1",
+            yref: "y1",
             line: { color: "green", width: 1, dash: "dash" }
         },
         {
@@ -698,6 +712,8 @@ function plotData() {
             x1: t50v,
             y0: X50v,
             y1: X50v,
+            xref: "x1",
+            yref: "y1",
             line: { color: "green", width: 1, dash: "dash" }
         },
         {
@@ -706,6 +722,8 @@ function plotData() {
             x1: t90v,
             y0: X90v,
             y1: X90v,
+            xref: "x1",
+            yref: "y1",
             line: { color: "green", width: 1, dash: "dash" }
         },
 
@@ -716,6 +734,8 @@ function plotData() {
             x1: t10v,
             y0: xa,
             y1: X10v,
+            xref: "x1",
+            yref: "y1",
             line: { color: "green", width: 1, dash: "dash" }
         },
         {
@@ -724,6 +744,8 @@ function plotData() {
             x1: t50v,
             y0: xa,
             y1: X50v,
+            xref: "x1",
+            yref: "y1",
             line: { color: "green", width: 1, dash: "dash" }
         },
         {
@@ -732,63 +754,85 @@ function plotData() {
             x1: t90v,
             y0: xa,
             y1: X90v,
+            xref: "x1",
+            yref: "y1",
             line: { color: "green", width: 1, dash: "dash" }
         }
     ];
 
     /* ---------------------------------------------------------
-       6) Plot erzeugen
+       6) Annotations (nur oberes Diagramm)
+    --------------------------------------------------------- */
+    const annotations = [
+        {
+            x: t0v,
+            y: xa,
+            xref: "x1",
+            yref: "y1",
+            text: "t0",
+            showarrow: false,
+            yshift: -20,
+            font: { size: 12, color: "red" }
+        },
+        {
+            x: t10v,
+            y: xa,
+            xref: "x1",
+            yref: "y1",
+            text: "t10",
+            showarrow: false,
+            yshift: -20,
+            font: { size: 12, color: "blue" }
+        },
+        {
+            x: t50v,
+            y: xa,
+            xref: "x1",
+            yref: "y1",
+            text: "t50",
+            showarrow: false,
+            yshift: -20,
+            font: { size: 12, color: "blue" }
+        },
+        {
+            x: t90v,
+            y: xa,
+            xref: "x1",
+            yref: "y1",
+            text: "t90",
+            showarrow: false,
+            yshift: -20,
+            font: { size: 12, color: "blue" }
+        }
+    ];
+
+    /* ---------------------------------------------------------
+       7) Plot erzeugen (Subplots)
     --------------------------------------------------------- */
     Plotly.newPlot("plotArea", [traceX, traceY, traceModel], {
-        margin: { t: 20, r: 20, b: 40, l: 50 },
-        xaxis: { title: "Zeit" },
-        yaxis: { title: "Wert" },
-        shapes: shapes,
-        annotations: [
-            {
-                x: t0v,
-                y: xa,
-                xref: "x",
-                yref: "y",
-                text: "t0",
-                showarrow: false,
-                yshift: -20,
-                font: { size: 12, color: "red" }
-            },
-            {
-                x: t10v,
-                y: xa,
-                xref: "x",
-                yref: "y",
-                text: "t10",
-                showarrow: false,
-                yshift: -20,
-                font: { size: 12, color: "blue" }
-            },
-            {
-                x: t50v,
-                y: xa,
-                xref: "x",
-                yref: "y",
-                text: "t50",
-                showarrow: false,
-                yshift: -20,
-                font: { size: 12, color: "blue" }
-            },
-            {
-                x: t90v,
-                y: xa,
-                xref: "x",
-                yref: "y",
-                text: "t90",
-                showarrow: false,
-                yshift: -20,
-                font: { size: 12, color: "blue" }
-            }
-        ]
 
-            });
-        }
+        grid: {
+            rows: 2,
+            columns: 1,
+            roworder: "top to bottom",
+            heights: [0.67, 0.33],
+            pattern: "independent"
+        },
+
+        // oberes Diagramm
+        xaxis:  { title: "Zeit" },
+        yaxis:  { title: "x(t)" },
+
+        // unteres Diagramm
+        xaxis2: { title: "Zeit" },
+        yaxis2: { title: "y(t)" },
+
+        shapes: shapes,
+        annotations: annotations,
+
+        margin: { t: 20, r: 20, b: 40, l: 50 }
+    });
+}
 
 
 /* ---------------------------------------------------------
@@ -822,4 +866,3 @@ plotData();
 
 </body>
 </html>
-
