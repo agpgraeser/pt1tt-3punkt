@@ -218,6 +218,11 @@
 
 <script>
 console.log("JS geladen");
+/* ---------------------------------------------------------
+   Globale Variablen
+--------------------------------------------------------- */
+let loadedFilename = "";
+
 
 /* ---------------------------------------------------------
    DOM-Referenzen
@@ -454,6 +459,7 @@ function handleExcelFile(event) {
     if (!file) return;
 
     fileName = file.name.replace(/\.[^/.]+$/, "");
+    loadedFilename = file.name;
 
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -811,27 +817,34 @@ function plotData() {
     --------------------------------------------------------- */
     Plotly.newPlot("plotArea", [traceX, traceY, traceModel], {
 
-        grid: {
-            rows: 2,
-            columns: 1,
-            roworder: "top to bottom",
-            heights: [0.67, 0.33],
-            pattern: "independent"
-        },
+    title: {
+        text: loadedFilename ? ("Datei: " + loadedFilename) : "PT1TT – Zeitverläufe",
+        y: 0.95,
+        pad: { t: 10 }
+    },
 
-        // oberes Diagramm
-        xaxis:  { title: "Zeit" },
-        yaxis:  { title: "x(t)" },
+    grid: {
+        rows: 2,
+        columns: 1,
+        roworder: "top to bottom",
+        heights: [0.67, 0.33],
+        pattern: "independent",
+        ygap: 0.02
+    },
 
-        // unteres Diagramm
-        xaxis2: { title: "Zeit" },
-        yaxis2: { title: "y(t)" },
+    // oberes Diagramm
+    xaxis:  { title: "Zeit" },
+    yaxis:  { title: "x(t)" },
 
-        shapes: shapes,
-        annotations: annotations,
+    // unteres Diagramm
+    xaxis2: { title: "Zeit" },
+    yaxis2: { title: "y(t)" },
 
-        margin: { t: 20, r: 20, b: 40, l: 50 }
-    });
+    shapes: shapes,
+    annotations: annotations,
+
+    margin: { t: 60, r: 20, b: 40, l: 50 }
+});
 }
 
 
