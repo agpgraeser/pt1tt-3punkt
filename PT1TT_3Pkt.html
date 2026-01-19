@@ -105,6 +105,12 @@
 <body>
 
 
+    <label>
+        <input type="checkbox" id="showDiff" checked>
+        Abweichung² anzeigen
+    </label>
+
+
 <div class="app-container">
 
     <!-- Linkes Drittel -->
@@ -192,7 +198,10 @@
             <input type="file" id="excelFile" accept=".xlsx,.xls" />
             <div id="fileInfo" style="font-size:0.8rem; color:#555; margin-top:6px;"></div>
         </div>
-
+    <div class="field-row-single">
+        <label for="showDiff">Abweichungen anzeigen</label>
+        <input type="checkbox" id="showDiff">
+    </div>    
         <!-- Weitere Einstellungen -->
         <div class="section">
             <div class="panel-title">Weitere Einstellungen (Platzhalter)</div>
@@ -590,10 +599,21 @@ function computeMinMax(arr) {
     };
 }
 
-
+// Hilfsfunktion kann auch außerhalb von plotData stehen
+function computeSquaredDifferences(meas, model) {
+    const diffs = [];
+    const n = Math.min(meas.length, model.length);
+    for (let i = 0; i < n; i++) {
+        const d = meas[i] - model[i];
+        diffs.push(d * d);
+    }
+    return diffs;
+}
 
 function plotData() {
     if (timeData.length === 0) return;
+const showDiffEl = document.getElementById("showDiff");
+const showDiff = showDiffEl ? showDiffEl.checked : false;
 
     /* ---------------------------------------------------------
        1) Min/Max berechnen
@@ -613,6 +633,8 @@ function plotData() {
        2) Modellantwort berechnen
     --------------------------------------------------------- */
     const XM = computeModelResponse();
+    // Quadratische Abweichung berechnen
+    const diffSquared = computeSquaredDifferences(xData, XM );
 
     /* ---------------------------------------------------------
        3) Plot-Traces
@@ -645,6 +667,16 @@ function plotData() {
         line: { width: 4, color: "red", dash: "dot" },
         xaxis: "x1",
         yaxis: "y1"
+    };
+// Trace für die quadratische Abweichung
+    const traceDiff = {
+        x: timeData,
+        y: diffSquared,
+        mode: "lines",
+        name: "Abweichung²",
+        xaxis: "x2",
+        yaxis: "y2",
+        line: { color: "red", width: 2 }
     };
 
     /* ---------------------------------------------------------
@@ -815,39 +847,64 @@ function plotData() {
     /* ---------------------------------------------------------
        7) Plot erzeugen (Subplots)
     --------------------------------------------------------- */
-    Plotly.newPlot("plotArea", [traceX, traceY, traceModel], {
+ const traces = [traceX, traceY, traceModel];
 
-    title: {
-        text: loadedFilename ? ("Datei: " + loadedFilename) : "PT1TT – Zeitverläufe",
-        y: 0.95,
-        pad: { t: 10 }
-    },
-
-    grid: {
-        rows: 2,
-        columns: 1,
-        roworder: "top to bottom",
-        heights: [0.67, 0.33],
-        pattern: "independent",
-        ygap: 0.02
-    },
-
-    // oberes Diagramm
-    xaxis:  { title: "Zeit" },
-    yaxis:  { title: "x(t)" },
-
-    // unteres Diagramm
-    xaxis2: { title: "Zeit" },
-    yaxis2: { title: "y(t)" },
-
-    shapes: shapes,
-    annotations: annotations,
-
-    margin: { t: 60, r: 20, b: 40, l: 50 }
-});
+if (showDiff) {
+    traces.push(traceDiff);
 }
 
+let layout;
 
+if (showDiff) {
+    // Layout MIT Abweichung (2 Panels)
+    layout = {
+        title: {
+            text: loadedFilename ? ("Datei: " + loadedFilename) : "PT1TT – Zeitverläufe",
+            y: 0.95,
+            pad: { t: 10 }
+        },
+
+        grid: {
+            rows: 2,
+            columns: 1,
+            roworder: "top to bottom",
+            heights: [0.67, 0.33],
+            pattern: "independent",
+            ygap: 0.02
+        },
+
+        xaxis:  { title: "Zeit" },
+        yaxis:  { title: "x(t)" },
+
+        xaxis2: { title: "Zeit" },
+        yaxis2: { title: "Δx²(t)" },
+
+        shapes: shapes,
+        annotations: annotations,
+
+        margin: { t: 60, r: 20, b: 40, l: 50 }
+    };
+} else {
+    // Layout OHNE Abweichung (1 Panel)
+    layout = {
+        title: {
+            text: loadedFilename ? ("Datei: " + loadedFilename) : "PT1TT – Zeitverläufe",
+            y: 0.95,
+            pad: { t: 10 }
+        },
+
+        xaxis: { title: "Zeit" },
+        yaxis: { title: "x(t)" },
+
+        shapes: shapes,
+        annotations: annotations,
+
+        margin: { t: 60, r: 20, b: 40, l: 50 }
+    };
+}
+
+Plotly.newPlot("plotArea", traces, layout);
+}
 /* ---------------------------------------------------------
    Event‑Listener
 --------------------------------------------------------- */
