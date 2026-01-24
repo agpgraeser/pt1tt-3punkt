@@ -105,11 +105,7 @@
 <body>
 
 
-    <label>
-        <input type="checkbox" id="showDiff" >
-        Abweichung² anzeigen
-    </label>
-
+   
 
 <div class="app-container">
 
@@ -198,10 +194,11 @@
             <input type="file" id="excelFile" accept=".xlsx,.xls" />
             <div id="fileInfo" style="font-size:0.8rem; color:#555; margin-top:6px;"></div>
         </div>
-    <div class="field-row-single">
-        <label for="showDiff">Abweichungen anzeigen</label>
-        <input type="checkbox" id="showDiff2">
-    </div>    
+        <div class="field-row-single">
+            <label for="showMode">Darstellung wählen (1–3):</label>
+            <input type="number" id="showMode" min="1" max="3" value="1">
+        </div>
+    
         <!-- Weitere Einstellungen -->
         <div class="section">
             <div class="panel-title">Weitere Einstellungen (Platzhalter)</div>
@@ -227,8 +224,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <script>
-console.log("JS geladen");
-let showDiff = false;
+
+
 
 
 
@@ -260,13 +257,10 @@ let showDiff = false;
 
     const excelInput = document.getElementById("excelFile");
     const fileInfo   = document.getElementById("fileInfo");
-   const showDiffEl = document.getElementById("showDiff");
+    const showModeEl = document.getElementById("showMode");
 
-    showDiffEl.addEventListener("change", () => {
-        showDiff = showDiffEl.checked;   // Wert → Variable
-        console.log("showDiff geändert auf:", showDiff);
-        plotData();
-    });
+   
+
 
 
 
@@ -275,6 +269,7 @@ let showDiff = false;
    Globale Variablen
 --------------------------------------------------------- */
 let loadedFilename = "";
+let showMode=1
 
 
 /* ---------------------------------------------------------
@@ -287,6 +282,18 @@ let systemName = "";
 let varNames = {};
 let units = {};
 let fileName = "";
+
+/*--------------------------------------------
+Datencontainer für Modell und Abweichungen
+----------------------------------------*/
+let XM = []; // Modellantwort
+let diffs = []; // Abweichungen
+let diffSquared = []; // Quadratische Abweichungen
+
+
+
+
+
 
 /* ---------------------------------------------------------
    Hilfsfunktionen
@@ -446,10 +453,10 @@ function updateDerivedValues() {
 }
 
 /* ---------------------------------------------------------
-   Modellantwort (PT1TT)
+Modellantwort (PT1TT)
 --------------------------------------------------------- */
 function computeModelResponse() {
-    const XM = [];
+    XM=[] // ✔️ globales XM leeren
 
     const xa = parseFloat(XA.value);
     const dy = parseFloat(DY.value);
@@ -471,21 +478,31 @@ function computeModelResponse() {
         }
     }
 
-    return XM;
+    //return XM;
 }
 
 //-----------------------------------------------
 // Quadratische Abweichungen berechnen
 //-------------------------------------------------
 function computeSquaredDifferences(xData, modelData) {
-    const diffs = [];
+    const diffsqr =[];
     for (let i = 0; i < xData.length; i++) {
-        const diff = xData[i] - modelData[i];
-        diffs.push(diff * diff);
+        const d  =xData[i] - modelData[i];
+        diffsqr.push(d * d);
+    }
+    return diffsqr;
+}
+//-----------------------------------------------
+// einfache Abweichungen berechnen
+//-------------------------------------------------
+function computeDifferences(xData, modelData) {
+    const diffs =[];
+    for (let i = 0; i < xData.length; i++) {
+        const d = xData[i] - modelData[i];
+        diffs.push(d);
     }
     return diffs;
 }
-
 
 
 
@@ -633,8 +650,24 @@ function computeMinMax(arr) {
 
 function plotData() {
     if (timeData.length === 0) return;
-    console.log("plotData: showDiff =", showDiff);
+    console.log("plotData: showMode =", showMode);
+    // --------------------------------------------------------- 
+    //  1. Gemeinsame Berechnungen (einmal, für alle Modi) 
+    //  ---------------------------------------------------------
    
+    // Modellwerte XM müssen vorher berechnet sein
+    computeModelResponse(); 
+
+    // diffx = x - xm 
+    diffx = computeDifferences(xData, XM);
+
+    // diffxsquared = (x - xm)^2 
+    diffxsquared = computeSquaredDifferences(xData, XM);
+
+
+
+
+
 
     /* ---------------------------------------------------------
        1) Min/Max berechnen
@@ -652,10 +685,12 @@ function plotData() {
 
     /* ---------------------------------------------------------
        2) Modellantwort berechnen
-    --------------------------------------------------------- */
-    const XM = computeModelResponse();
+    --------------------------------------------------------- 
+    computeModelResponse();
     // Quadratische Abweichung berechnen
     const diffSquared = computeSquaredDifferences(xData, XM );
+    const diffs = computeDifferences(xData, XM );
+    ----------------------------------------------------------*/
 
     /* ---------------------------------------------------------
        3) Plot-Traces
@@ -689,12 +724,23 @@ function plotData() {
         xaxis: "x1",
         yaxis: "y1"
     };
-// Trace für die quadratische Abweichung
+// Trace für die  Abweichung
     const traceDiff = {
         x: timeData,
-        y: diffSquared,
+        y: diffx,
         mode: "lines",
-        name: "Abweichung²",
+        name: "Abweichung",
+        xaxis: "x2",
+        yaxis: "y2",
+        line: { color: "red", width: 2 }
+    };
+
+// Trace für die quadratische Abweichung
+    const traceDiffsqr = {
+        x: timeData,
+        y: diffxsquared,
+        mode: "lines",
+        name: "Abweichung",
         xaxis: "x2",
         yaxis: "y2",
         line: { color: "red", width: 2 }
@@ -868,41 +914,43 @@ function plotData() {
     /* ---------------------------------------------------------
    7) Plot erzeugen (Subplots)
 --------------------------------------------------------- */
-console.log("PLOTBLOCK WIRD AUSGEFÜHRT");
-
-//const showDiffEl = document.getElementById("showDiff");
-//const showDiff   = showDiffEl ? showDiffEl.checked : false;
-console.log("showDiff vor plot erzeugen =", showDiff);
-
-
+ // Modellwerte aktualisieren 
+ computeModelResponse(); 
+ // XM wird global gefüllt 
+ // --------------------------------------------------------- 
+ // Abweichungen berechnen 
+ //  --------------------------------------------------------- 
+ const diff = computeDifferences(xData, XM); 
+ const diffsqr = computeSquaredDifferences(xData, XM);  
 
 
 let traces;
-let y2Title;
-console.log("showDiff =", showDiff);
+let y2title;
 
-if (showDiff) {
-    const diffSquared = computeSquaredDifferences(xData, XM);
+ 
+console.log("showMode =", showMode);
 
-    const traceDiff = {
-        x: timeData,
-        y: diffSquared,
-        mode: "lines",
-        name: "Abweichung²",
-        xaxis: "x2",
-        yaxis: "y2",
-        line: { color: "red", width: 2 }
-    };
+if (showMode===1) {
+    console.log("showMode =:", showMode);
+    // oben: X + Modell, unten: Stellgröße
+    traces = [traceX, traceModel, traceY];
+    y2title=" Stellgröße y(t)"
+    } 
+else if(showMode===2){
+    console.log("showMode =:", showMode);
+    // oben: X + Modell, unten: Abweichung
+    traces  = [traceX, traceModel, traceDiff];
+    y2title = "Abweichung Δx(t)";
+    }
+else if (showMode === 3) {
+    console.log("showMode =:", showMode);
+    // oben: X + Modell, unten: quadratische Abweichung
+    traces  = [traceX, traceModel, traceDiffsqr];
+    y2title = "Δx²(t)";
+    }   
+    
+   
 
-    // oben: X + Modell, unten: Abweichung²
-    traces = [traceX, traceModel, traceDiff];
-    y2Title = "Δx²(t)";
-
-} else {
-    // oben: X + Modell, unten: Y
-    traces  = [traceX, traceModel, traceY];
-    y2Title = "y(t)";
-}
 
 Plotly.newPlot("plotArea", traces, {
     title: {
@@ -921,50 +969,69 @@ Plotly.newPlot("plotArea", traces, {
     xaxis:  { title: "Zeit" },
     yaxis:  { title: "x(t)" },
     xaxis2: { title: "Zeit" },
-    yaxis2: { title: y2Title },
+    yaxis2: { title: y2title },
     shapes: shapes,
     annotations: annotations,
     margin: { t: 60, r: 20, b: 40, l: 50 }
 });
+   
 }
-
 
     /* ---------------------------------------------------------
        Event‑Listener
     --------------------------------------------------------- */
-console.log(">>> showDiff Listener FEUERT");
+    XA.addEventListener("input", () => {
+        updateDX();
+        computeModelResponse();
+        plotData();
+    });
 
-    console.log("Listener für showDiff wird gesetzt, showDiffEl =", showDiffEl);
-    // Checkbox
-    showDiffEl.addEventListener("change", () => {
-         console.log("Checkbox wurde geklickt!");
-        console.log("timeData =", timeData);
-        console.log("timeData.length =", timeData?.length);
-      //updateShowDiff();
-        if (timeData && timeData.length > 0) {
-            plotData();
-        }
+    XE.addEventListener("input", () => {
+        updateDX();
+        computeModelResponse();
+        plotData();
+    });
+     YA.addEventListener("input", () => {
+        updateDY();
+        computeModelResponse();
+        plotData();
+    });
+
+    YE.addEventListener("input", () => {
+        updateDY();
+        computeModelResponse();
+        plotData();
     });
    
 
-    // DX
-    XA.addEventListener("input", () => { updateDX(); plotData(); });
-    XE.addEventListener("input", () => { updateDX(); plotData(); });
+   t0.addEventListener("input", () => {
+    updateTimeOrder();
+    computeModelResponse();
+    plotData();
+    });
 
-    // DY
-    YA.addEventListener("input", () => { updateDY(); plotData(); });
-    YE.addEventListener("input", () => { updateDY(); plotData(); });
+    t10.addEventListener("input", () => {
+        updateTimeOrder();
+        computeModelResponse();
+        plotData();
+    });
 
-    // Zeitpunkte
-    t0.addEventListener("input",  () => { updateTimeOrder(); plotData(); });
-    t10.addEventListener("input", () => { updateTimeOrder(); plotData(); });
-    t50.addEventListener("input", () => { updateTimeOrder(); plotData(); });
-    t90.addEventListener("input", () => { updateTimeOrder(); plotData(); });
+    t50.addEventListener("input", () => {
+        updateTimeOrder();
+        computeModelResponse();
+        plotData();
+    });
 
+    t90.addEventListener("input", () => {
+        updateTimeOrder();
+        computeModelResponse();
+        plotData();
+    });
 
-
-
-
+    showModeEl.addEventListener("input", () => {
+    showMode = Number(showModeEl.value);
+    plotData();
+    });
 
 
 /* ---------------------------------------------------------
