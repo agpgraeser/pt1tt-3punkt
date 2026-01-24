@@ -228,6 +228,8 @@
 
 <script>
 console.log("JS geladen");
+let showDiff = false;
+
 
 
 
@@ -258,7 +260,17 @@ console.log("JS geladen");
 
     const excelInput = document.getElementById("excelFile");
     const fileInfo   = document.getElementById("fileInfo");
-    const showDiffEl = document.getElementById("showDiff");
+   const showDiffEl = document.getElementById("showDiff");
+
+    showDiffEl.addEventListener("change", () => {
+        showDiff = showDiffEl.checked;   // Wert → Variable
+        console.log("showDiff geändert auf:", showDiff);
+        plotData();
+    });
+
+
+
+
 /* ---------------------------------------------------------
    Globale Variablen
 --------------------------------------------------------- */
@@ -621,7 +633,7 @@ function computeMinMax(arr) {
 
 function plotData() {
     if (timeData.length === 0) return;
-    const showDiff = showDiffEl.checked;
+    console.log("plotData: showDiff =", showDiff);
    
 
     /* ---------------------------------------------------------
