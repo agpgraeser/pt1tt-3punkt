@@ -71,7 +71,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 // 6-column compact grid: label | input | label | input | label | input
 const row6: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'auto 85px auto 85px auto 85px',
+  gridTemplateColumns: 'auto 95px auto 95px auto 95px',
   columnGap: 4,
   rowGap: 4,
   alignItems: 'center',
@@ -80,7 +80,7 @@ const row6: React.CSSProperties = {
 // 4-column compact grid: label | input | label | input
 const row4: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'auto 85px auto 85px',
+  gridTemplateColumns: 'auto 95px auto 95px',
   columnGap: 4,
   rowGap: 4,
   alignItems: 'center',
@@ -89,7 +89,7 @@ const row4: React.CSSProperties = {
 // 2-column: label | input
 const row2: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'auto 85px',
+  gridTemplateColumns: 'auto 95px',
   columnGap: 4,
   alignItems: 'center',
 };

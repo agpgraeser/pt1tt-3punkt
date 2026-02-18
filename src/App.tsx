@@ -16,7 +16,7 @@ export default function App() {
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: '320px 1fr',
+          gridTemplateColumns: '400px 1fr',
           height: '100vh',
           overflow: 'hidden',
         }}
