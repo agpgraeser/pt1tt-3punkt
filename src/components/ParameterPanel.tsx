@@ -108,115 +108,118 @@ export default function ParameterPanel({ state, derived, dispatch }: Props) {
       sx={{
         background: '#fff',
         boxShadow: '2px 0 4px rgba(0,0,0,0.06)',
-        overflowY: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: 0,
         height: '100vh',
+        overflow: 'hidden',
       }}
     >
-      {/* ── Section 1: Signal bounds ── */}
-      <Box sx={{ px: 2, pt: 2, pb: 1.5 }}>
-        <SectionTitle>PT1TT-Parameter berechnen</SectionTitle>
+      {/* ══ Fixed top zone — always visible ══════════════════════════════════ */}
+      <Box sx={{ flexShrink: 0 }}>
 
-        <Box sx={row6}>
-          <Lbl>XA</Lbl>
-          <NumInput value={state.xA} step={0.01} error={errors.xA}
-            onChange={v => setField('xA', v)} />
-          <Lbl>XE</Lbl>
-          <NumInput value={state.xE} step={0.01} error={errors.xE}
-            onChange={v => setField('xE', v)} />
-          <Lbl>DX</Lbl>
-          <NumInput value={fmt(derived.dX, 2)} readOnly />
+        {/* ── Section 1: Signal bounds ── */}
+        <Box sx={{ px: 2, pt: 2, pb: 1.5 }}>
+          <SectionTitle>PT1TT-Parameter berechnen</SectionTitle>
+
+          <Box sx={row6}>
+            <Lbl>XA</Lbl>
+            <NumInput value={state.xA} step={0.01} error={errors.xA}
+              onChange={v => setField('xA', v)} />
+            <Lbl>XE</Lbl>
+            <NumInput value={state.xE} step={0.01} error={errors.xE}
+              onChange={v => setField('xE', v)} />
+            <Lbl>DX</Lbl>
+            <NumInput value={fmt(derived.dX, 2)} readOnly />
+          </Box>
+
+          <Box sx={{ ...row6, mt: '4px' }}>
+            <Lbl>YA</Lbl>
+            <NumInput value={state.yA} step={0.01} error={errors.yA}
+              onChange={v => setField('yA', v)} />
+            <Lbl>YE</Lbl>
+            <NumInput value={state.yE} step={0.01} error={errors.yE}
+              onChange={v => setField('yE', v)} />
+            <Lbl>DY</Lbl>
+            <NumInput value={fmt(derived.dY, 2)} readOnly />
+          </Box>
+
+          <Box sx={{ ...row2, mt: '4px' }}>
+            <Lbl>t₀</Lbl>
+            <NumInput value={state.t0} step={0.1} error={errors.t0}
+              onChange={v => setField('t0', v)} />
+          </Box>
         </Box>
 
-        <Box sx={{ ...row6, mt: '4px' }}>
-          <Lbl>YA</Lbl>
-          <NumInput value={state.yA} step={0.01} error={errors.yA}
-            onChange={v => setField('yA', v)} />
-          <Lbl>YE</Lbl>
-          <NumInput value={state.yE} step={0.01} error={errors.yE}
-            onChange={v => setField('yE', v)} />
-          <Lbl>DY</Lbl>
-          <NumInput value={fmt(derived.dY, 2)} readOnly />
+        <Divider />
+
+        {/* ── Section 2: Three-point method ── */}
+        <Box sx={{ px: 2, py: 1.5 }}>
+          <SectionTitle>ZPK / 3-Punkt Methode</SectionTitle>
+
+          <Box sx={row4}>
+            <Lbl>X10</Lbl>
+            <NumInput value={fmt(derived.x10, 2)} readOnly />
+            <Lbl>t10</Lbl>
+            <NumInput value={state.t10} step={0.01} error={errors.t10}
+              onChange={v => setField('t10', v)} />
+
+            <Lbl>X50</Lbl>
+            <NumInput value={fmt(derived.x50, 2)} readOnly />
+            <Lbl>t50</Lbl>
+            <NumInput value={state.t50} step={0.01} error={errors.t50}
+              onChange={v => setField('t50', v)} />
+
+            <Lbl>X90</Lbl>
+            <NumInput value={fmt(derived.x90, 2)} readOnly />
+            <Lbl>t90</Lbl>
+            <NumInput value={state.t90} step={0.01} error={errors.t90}
+              onChange={v => setField('t90', v)} />
+          </Box>
         </Box>
 
-        <Box sx={{ ...row2, mt: '4px' }}>
-          <Lbl>t₀</Lbl>
-          <NumInput value={state.t0} step={0.1} error={errors.t0}
-            onChange={v => setField('t0', v)} />
+        <Divider />
+
+        {/* ── Section 3: Derived parameters ── */}
+        <Box sx={{ px: 2, py: 1.5 }}>
+          <SectionTitle>Berechnete Kennwerte</SectionTitle>
+
+          <Box sx={row6}>
+            <Lbl>kS</Lbl>
+            <NumInput value={fmt(derived.kS, 4)} readOnly />
+            <Lbl>TT</Lbl>
+            <NumInput value={fmt(derived.TT, 3)} readOnly />
+            <Lbl>TG</Lbl>
+            <NumInput value={fmt(derived.TG, 3)} readOnly />
+          </Box>
         </Box>
+
+        <Divider />
+
+        {/* ── Section 4: Display mode ── */}
+        <Box sx={{ px: 2, py: 1.5 }}>
+          <SectionTitle>Darstellung</SectionTitle>
+          <ToggleButtonGroup
+            value={state.showMode}
+            exclusive
+            onChange={(_e, val: ShowMode | null) => {
+              if (val !== null) dispatch({ type: 'SET_SHOW_MODE', mode: val });
+            }}
+            size="small"
+            sx={{ '& .MuiToggleButton-root': { fontSize: '0.78rem', px: 1.2, py: 0.4 } }}
+          >
+            <ToggleButton value={1}>Stellgröße</ToggleButton>
+            <ToggleButton value={2}>Abweichung</ToggleButton>
+            <ToggleButton value={3}>Δx²</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
+        <Divider />
       </Box>
 
-      <Divider />
-
-      {/* ── Section 2: Three-point method ── */}
-      <Box sx={{ px: 2, py: 1.5 }}>
-        <SectionTitle>ZPK / 3-Punkt Methode</SectionTitle>
-
-        <Box sx={row4}>
-          <Lbl>X10</Lbl>
-          <NumInput value={fmt(derived.x10, 2)} readOnly />
-          <Lbl>t10</Lbl>
-          <NumInput value={state.t10} step={0.01} error={errors.t10}
-            onChange={v => setField('t10', v)} />
-
-          <Lbl>X50</Lbl>
-          <NumInput value={fmt(derived.x50, 2)} readOnly />
-          <Lbl>t50</Lbl>
-          <NumInput value={state.t50} step={0.01} error={errors.t50}
-            onChange={v => setField('t50', v)} />
-
-          <Lbl>X90</Lbl>
-          <NumInput value={fmt(derived.x90, 2)} readOnly />
-          <Lbl>t90</Lbl>
-          <NumInput value={state.t90} step={0.01} error={errors.t90}
-            onChange={v => setField('t90', v)} />
-        </Box>
-      </Box>
-
-      <Divider />
-
-      {/* ── Section 3: Derived parameters ── */}
-      <Box sx={{ px: 2, py: 1.5 }}>
-        <SectionTitle>Berechnete Kennwerte</SectionTitle>
-
-        <Box sx={row6}>
-          <Lbl>kS</Lbl>
-          <NumInput value={fmt(derived.kS, 4)} readOnly />
-          <Lbl>TT</Lbl>
-          <NumInput value={fmt(derived.TT, 3)} readOnly />
-          <Lbl>TG</Lbl>
-          <NumInput value={fmt(derived.TG, 3)} readOnly />
-        </Box>
-      </Box>
-
-      <Divider />
-
-      {/* ── Section 4: Excel import ── */}
-      <Box sx={{ px: 2, py: 1.5 }}>
+      {/* ══ Scrollable bottom zone — Excel import + preview ══════════════════ */}
+      <Box sx={{ flex: 1, overflowY: 'auto', px: 2, py: 1.5 }}>
         <SectionTitle>Messdaten laden</SectionTitle>
         <ExcelImport state={state} dispatch={dispatch} />
-      </Box>
-
-      <Divider />
-
-      {/* ── Section 5: Display mode ── */}
-      <Box sx={{ px: 2, py: 1.5 }}>
-        <SectionTitle>Darstellung</SectionTitle>
-        <ToggleButtonGroup
-          value={state.showMode}
-          exclusive
-          onChange={(_e, val: ShowMode | null) => {
-            if (val !== null) dispatch({ type: 'SET_SHOW_MODE', mode: val });
-          }}
-          size="small"
-          sx={{ '& .MuiToggleButton-root': { fontSize: '0.78rem', px: 1.2, py: 0.4 } }}
-        >
-          <ToggleButton value={1}>Stellgröße</ToggleButton>
-          <ToggleButton value={2}>Abweichung</ToggleButton>
-          <ToggleButton value={3}>Δx²</ToggleButton>
-        </ToggleButtonGroup>
       </Box>
     </Box>
   );
