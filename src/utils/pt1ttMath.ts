@@ -29,7 +29,11 @@ export function computeDerived(state: PT1TTState): DerivedValues {
   let TT: number | null = null;
   let TG: number | null = null;
 
-  if (t0 !== null && t10 !== null && t50 !== null && t90 !== null) {
+  // Only compute TT/TG when all time inputs are filled and in valid order
+  if (
+    t0 !== null && t10 !== null && t50 !== null && t90 !== null &&
+    t0 < t10 && t10 < t50 && t50 < t90
+  ) {
     const t10_rel = t10 - t0;
     const t50_rel = t50 - t0;
     const t90_rel = t90 - t0;
