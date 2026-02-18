@@ -72,8 +72,8 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 const row6: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'auto 95px auto 95px auto 95px',
-  columnGap: 4,
-  rowGap: 4,
+  columnGap: '6px',
+  rowGap: '4px',
   alignItems: 'center',
 };
 
@@ -81,8 +81,8 @@ const row6: React.CSSProperties = {
 const row4: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'auto 95px auto 95px',
-  columnGap: 4,
-  rowGap: 4,
+  columnGap: '6px',
+  rowGap: '4px',
   alignItems: 'center',
 };
 
@@ -90,7 +90,7 @@ const row4: React.CSSProperties = {
 const row2: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'auto 95px',
-  columnGap: 4,
+  columnGap: '6px',
   alignItems: 'center',
 };
 
