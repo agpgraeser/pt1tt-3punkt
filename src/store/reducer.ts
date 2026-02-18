@@ -34,6 +34,10 @@ export function reducer(state: PT1TTState, action: Action): PT1TTState {
     case 'LOAD_EXCEL':
       return {
         ...state,
+        xA: '',
+        xE: '',
+        yA: '',
+        yE: '',
         timeData: action.result.timeData,
         xData: action.result.xData,
         yData: action.result.yData,
