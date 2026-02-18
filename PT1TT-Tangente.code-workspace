@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../PT1TT-Tangente"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "PT1TT_Berechnung"
+	}
+}
