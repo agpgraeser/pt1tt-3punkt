@@ -1,19 +1,30 @@
 {
-  "name": "pt1tt_berechnung",
+  "name": "pt1tt-berechnung",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^5.17.1",
+    "@mui/material": "^5.17.1",
+    "plotly.js": "^2.32.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "xlsx": "0.18.5"
+  },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
-    "eslint": "^9.39.2",
-    "eslint-plugin-react": "^7.37.5",
-    "globals": "^17.0.0"
+    "@types/plotly.js": "^2.12.29",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vite-plugin-node-polyfills": "^0.25.0"
   }
 }
