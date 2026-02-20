@@ -10,7 +10,7 @@ export const initialState: PT1TTState = {
   xE: '1',
   yA: '0',
   yE: '1',
-  t0: '0',
+  t0: '-100',
   t10: '0',
   t50: '0',
   t90: '0',
