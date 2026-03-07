@@ -48,6 +48,8 @@ export function computeDerived(state: PT1TTState): DerivedValues {
   let modelData: number[] = [];
   let diffs: number[] = [];
   let diffSquared: number[] = [];
+  let cumSum: number[] = [];
+  let cumSumTotal: number | null = null;
 
   if (
     xA !== null && dY !== null && kS !== null &&
@@ -62,9 +64,18 @@ export function computeDerived(state: PT1TTState): DerivedValues {
     });
     diffs = state.xData.map((x, i) => x - modelData[i]);
     diffSquared = diffs.map(d => d * d);
+
+    // Cumulative integral: S(ti) = S(ti-1) + Δx²(ti) · Δt
+    let acc = 0;
+    cumSum = state.timeData.map((t, i) => {
+      const dt = i === 0 ? 0 : t - state.timeData[i - 1];
+      acc += diffSquared[i] * dt;
+      return acc;
+    });
+    cumSumTotal = acc;
   }
 
-  return { dX, dY, x10, x50, x90, kS, TT, TG, modelData, diffs, diffSquared };
+  return { dX, dY, x10, x50, x90, kS, TT, TG, modelData, diffs, diffSquared, cumSum, cumSumTotal };
 }
 
 /**

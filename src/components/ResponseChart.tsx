@@ -28,7 +28,7 @@ export default function ResponseChart({ state, derived }: Props) {
     if (!div || state.timeData.length === 0) return;
 
     const { timeData, xData, yData, showMode, fileName, varNames } = state;
-    const { modelData, diffs, diffSquared, x10, x50, x90 } = derived;
+    const { modelData, diffs, diffSquared, cumSum, cumSumTotal, x10, x50, x90 } = derived;
 
     const xa = parseFloat(state.xA);
     const xe = parseFloat(state.xE);
@@ -79,6 +79,13 @@ export default function ResponseChart({ state, derived }: Props) {
       xaxis: 'x2', yaxis: 'y2',
     };
 
+    const traceCumSum: Plotly.Data = {
+      x: timeData, y: cumSum,
+      mode: 'lines', name: 'Σ Δx²·Δt',
+      line: { color: '#7b1fa2', width: 2 },
+      xaxis: 'x2', yaxis: 'y2',
+    };
+
     let traces: Plotly.Data[];
     let y2title: string;
 
@@ -88,13 +95,19 @@ export default function ResponseChart({ state, derived }: Props) {
     } else if (showMode === 2) {
       traces = [traceX, traceModel, traceDiff];
       y2title = 'Abweichung Δx(t)';
-    } else {
+    } else if (showMode === 3) {
       traces = [traceX, traceModel, traceDiffsqr];
       y2title = 'Δx²(t)';
+    } else {
+      traces = [traceX, traceModel, traceCumSum];
+      y2title = 'Σ Δx²·Δt';
     }
 
     // --- Reference line shapes (first subplot only) ---
-    const shapes: Partial<Plotly.Shape>[] = [
+    // Only draw shapes and annotations when XA / XE are valid numbers
+    const xaXeValid = !isNaN(xa) && !isNaN(xe);
+
+    const shapes: Partial<Plotly.Shape>[] = xaXeValid ? [
       // Vertical line at t0
       {
         type: 'line', x0: t0v, x1: t0v, y0: xa, y1: xe,
@@ -144,15 +157,30 @@ export default function ResponseChart({ state, derived }: Props) {
         xref: 'x', yref: 'y',
         line: { color: 'green', width: 1, dash: 'dash' },
       },
-    ];
+    ] : [];
 
     // --- Annotations ---
-    const annotations: Partial<Plotly.Annotations>[] = [
+    const annotations: Partial<Plotly.Annotations>[] = xaXeValid ? [
       { x: t0v,  y: xa, xref: 'x', yref: 'y', text: 't₀',  showarrow: false, yshift: -18, font: { size: 12, color: 'orange' } },
       { x: t10v, y: xa, xref: 'x', yref: 'y', text: 't10', showarrow: false, yshift: -18, font: { size: 12, color: 'blue' } },
       { x: t50v, y: xa, xref: 'x', yref: 'y', text: 't50', showarrow: false, yshift: -18, font: { size: 12, color: 'blue' } },
       { x: t90v, y: xa, xref: 'x', yref: 'y', text: 't90', showarrow: false, yshift: -18, font: { size: 12, color: 'blue' } },
-    ];
+    ] : [];
+
+    // Endwert-Annotation für mode 4 im unteren Diagramm
+    if (showMode === 4 && cumSumTotal !== null && timeData.length > 0) {
+      annotations.push({
+        x: timeData[timeData.length - 1],
+        y: cumSumTotal,
+        xref: 'x2', yref: 'y2',
+        text: `Σ = ${cumSumTotal.toFixed(4)}`,
+        showarrow: true,
+        arrowhead: 2,
+        ax: -60, ay: -20,
+        font: { size: 12, color: '#7b1fa2' },
+        arrowcolor: '#7b1fa2',
+      });
+    }
 
     const layout: Partial<Plotly.Layout> = {
       title: { text: fileName || 'PT1TT – Zeitverläufe', y: 0.97 },

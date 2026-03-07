@@ -1,4 +1,4 @@
-export type ShowMode = 1 | 2 | 3;
+export type ShowMode = 1 | 2 | 3 | 4;
 
 export interface VarNames {
   time: string;
@@ -32,6 +32,7 @@ export interface PT1TTState {
   units: Units;
   fileName: string;
   excelPreviewRows: (string | number | undefined)[][];
+  displayMode: number;
 }
 
 export interface DerivedValues {
@@ -46,6 +47,8 @@ export interface DerivedValues {
   modelData: number[];
   diffs: number[];
   diffSquared: number[];
+  cumSum: number[];
+  cumSumTotal: number | null;
 }
 
 export interface ExcelParseResult {

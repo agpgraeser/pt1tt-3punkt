@@ -3,6 +3,7 @@ import type { PT1TTState, ShowMode, ExcelParseResult } from '../types';
 export type Action =
   | { type: 'SET_FIELD'; field: 'xA' | 'xE' | 'yA' | 'yE' | 't0' | 't10' | 't50' | 't90'; value: string }
   | { type: 'SET_SHOW_MODE'; mode: ShowMode }
+  | { type: 'SET_DISPLAY_MODE'; value: number }
   | { type: 'LOAD_EXCEL'; result: ExcelParseResult; fileName: string };
 
 export const initialState: PT1TTState = {
@@ -23,6 +24,7 @@ export const initialState: PT1TTState = {
   units: { time: '', x: '', y: '' },
   fileName: '',
   excelPreviewRows: [],
+  displayMode: 0,
 };
 
 export function reducer(state: PT1TTState, action: Action): PT1TTState {
@@ -31,6 +33,8 @@ export function reducer(state: PT1TTState, action: Action): PT1TTState {
       return { ...state, [action.field]: action.value };
     case 'SET_SHOW_MODE':
       return { ...state, showMode: action.mode };
+    case 'SET_DISPLAY_MODE':
+      return { ...state, displayMode: action.value };
     case 'LOAD_EXCEL':
       return {
         ...state,

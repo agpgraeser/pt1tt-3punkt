@@ -80,19 +80,12 @@ const row6: React.CSSProperties = {
 // 4-column compact grid: label | input | label | input
 const row4: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'auto 95px auto 95px',
+  gridTemplateColumns: 'max-content 95px max-content 95px',
   columnGap: '6px',
   rowGap: '4px',
   alignItems: 'center',
 };
 
-// 2-column: label | input
-const row2: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'auto 95px',
-  columnGap: '6px',
-  alignItems: 'center',
-};
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -119,9 +112,14 @@ export default function ParameterPanel({ state, derived, dispatch }: Props) {
 
         {/* ── Section 1: Signal bounds ── */}
         <Box sx={{ px: 2, pt: 2, pb: 1.5 }}>
-          <SectionTitle>PT1TT-Parameter berechnen</SectionTitle>
-
           <Box sx={row6}>
+            <Typography
+              variant="subtitle2"
+              fontWeight={600}
+              sx={{ gridColumn: '1 / -1', textAlign: 'center', fontSize: '0.82rem', mb: 0.5 }}
+            >
+              PT1TT Parameter nach der 3-Punkt Methode berechnen
+            </Typography>
             <Lbl>XA</Lbl>
             <NumInput value={state.xA} step={0.01} error={errors.xA}
               onChange={v => setField('xA', v)} />
@@ -130,9 +128,7 @@ export default function ParameterPanel({ state, derived, dispatch }: Props) {
               onChange={v => setField('xE', v)} />
             <Lbl>DX</Lbl>
             <NumInput value={fmt(derived.dX, 2)} readOnly />
-          </Box>
 
-          <Box sx={{ ...row6, mt: '4px' }}>
             <Lbl>YA</Lbl>
             <NumInput value={state.yA} step={0.01} error={errors.yA}
               onChange={v => setField('yA', v)} />
@@ -141,12 +137,11 @@ export default function ParameterPanel({ state, derived, dispatch }: Props) {
               onChange={v => setField('yE', v)} />
             <Lbl>DY</Lbl>
             <NumInput value={fmt(derived.dY, 2)} readOnly />
-          </Box>
 
-          <Box sx={{ ...row2, mt: '4px' }}>
             <Lbl>t₀</Lbl>
             <NumInput value={state.t0} step={0.1} error={errors.t0}
               onChange={v => setField('t0', v)} />
+            <span /><span /><span /><span />
           </Box>
         </Box>
 
@@ -210,6 +205,7 @@ export default function ParameterPanel({ state, derived, dispatch }: Props) {
             <ToggleButton value={1}>Stellgröße</ToggleButton>
             <ToggleButton value={2}>Abweichung</ToggleButton>
             <ToggleButton value={3}>Δx²</ToggleButton>
+            <ToggleButton value={4}>Σ Δx²·Δt</ToggleButton>
           </ToggleButtonGroup>
         </Box>
 
