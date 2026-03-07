@@ -1,10 +1,11 @@
 import {
-  Box, Typography, Divider, TextField,
+  Box, Typography, Divider, TextField, Tooltip,
   ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
 import type { Action } from '../store/reducer';
 import type { PT1TTState, DerivedValues, ShowMode } from '../types';
 import { validateInputs, fmt } from '../utils/pt1ttMath';
+import { TIPS } from '../utils/tooltips';
 import ExcelImport from './ExcelImport';
 
 interface Props {
@@ -16,15 +17,16 @@ interface Props {
 // ── Inline helpers ────────────────────────────────────────────────────────────
 
 function NumInput({
-  value, onChange, readOnly = false, error = false, step,
+  value, onChange, readOnly = false, error = false, step, tip,
 }: {
   value: string;
   onChange?: (v: string) => void;
   readOnly?: boolean;
   error?: boolean;
   step?: number;
+  tip?: string;
 }) {
-  return (
+  const field = (
     <TextField
       value={value}
       onChange={e => onChange?.(e.target.value)}
@@ -46,6 +48,11 @@ function NumInput({
       }}
     />
   );
+  return tip ? (
+    <Tooltip title={tip} placement="right" arrow>
+      <span>{field}</span>
+    </Tooltip>
+  ) : field;
 }
 
 function Lbl({ children }: { children: React.ReactNode }) {
@@ -57,6 +64,14 @@ function Lbl({ children }: { children: React.ReactNode }) {
     >
       {children}
     </Typography>
+  );
+}
+
+function TipLbl({ tipKey, children }: { tipKey: string; children: React.ReactNode }) {
+  return (
+    <Tooltip title={TIPS[tipKey] ?? ''} placement="right" arrow>
+      <span><Lbl>{children}</Lbl></span>
+    </Tooltip>
   );
 }
 
@@ -120,26 +135,26 @@ export default function ParameterPanel({ state, derived, dispatch }: Props) {
             >
               PT1TT Parameter nach der 3-Punkt Methode berechnen
             </Typography>
-            <Lbl>XA</Lbl>
-            <NumInput value={state.xA} step={0.01} error={errors.xA}
+            <TipLbl tipKey="xA">XA</TipLbl>
+            <NumInput value={state.xA} step={0.01} error={errors.xA} tip={TIPS.xA}
               onChange={v => setField('xA', v)} />
-            <Lbl>XE</Lbl>
-            <NumInput value={state.xE} step={0.01} error={errors.xE}
+            <TipLbl tipKey="xE">XE</TipLbl>
+            <NumInput value={state.xE} step={0.01} error={errors.xE} tip={TIPS.xE}
               onChange={v => setField('xE', v)} />
-            <Lbl>DX</Lbl>
-            <NumInput value={fmt(derived.dX, 2)} readOnly />
+            <TipLbl tipKey="dX">DX</TipLbl>
+            <NumInput value={fmt(derived.dX, 2)} readOnly tip={TIPS.dX} />
 
-            <Lbl>YA</Lbl>
-            <NumInput value={state.yA} step={0.01} error={errors.yA}
+            <TipLbl tipKey="yA">YA</TipLbl>
+            <NumInput value={state.yA} step={0.01} error={errors.yA} tip={TIPS.yA}
               onChange={v => setField('yA', v)} />
-            <Lbl>YE</Lbl>
-            <NumInput value={state.yE} step={0.01} error={errors.yE}
+            <TipLbl tipKey="yE">YE</TipLbl>
+            <NumInput value={state.yE} step={0.01} error={errors.yE} tip={TIPS.yE}
               onChange={v => setField('yE', v)} />
-            <Lbl>DY</Lbl>
-            <NumInput value={fmt(derived.dY, 2)} readOnly />
+            <TipLbl tipKey="dY">DY</TipLbl>
+            <NumInput value={fmt(derived.dY, 2)} readOnly tip={TIPS.dY} />
 
-            <Lbl>t₀</Lbl>
-            <NumInput value={state.t0} step={0.1} error={errors.t0}
+            <TipLbl tipKey="t0">t₀</TipLbl>
+            <NumInput value={state.t0} step={0.1} error={errors.t0} tip={TIPS.t0}
               onChange={v => setField('t0', v)} />
             <span /><span /><span /><span />
           </Box>
@@ -152,22 +167,22 @@ export default function ParameterPanel({ state, derived, dispatch }: Props) {
           <SectionTitle>ZPK / 3-Punkt Methode</SectionTitle>
 
           <Box sx={row4}>
-            <Lbl>X10</Lbl>
-            <NumInput value={fmt(derived.x10, 2)} readOnly />
-            <Lbl>t10</Lbl>
-            <NumInput value={state.t10} step={0.01} error={errors.t10}
+            <TipLbl tipKey="x10">X10</TipLbl>
+            <NumInput value={fmt(derived.x10, 2)} readOnly tip={TIPS.x10} />
+            <TipLbl tipKey="t10">t10</TipLbl>
+            <NumInput value={state.t10} step={0.01} error={errors.t10} tip={TIPS.t10}
               onChange={v => setField('t10', v)} />
 
-            <Lbl>X50</Lbl>
-            <NumInput value={fmt(derived.x50, 2)} readOnly />
-            <Lbl>t50</Lbl>
-            <NumInput value={state.t50} step={0.01} error={errors.t50}
+            <TipLbl tipKey="x50">X50</TipLbl>
+            <NumInput value={fmt(derived.x50, 2)} readOnly tip={TIPS.x50} />
+            <TipLbl tipKey="t50">t50</TipLbl>
+            <NumInput value={state.t50} step={0.01} error={errors.t50} tip={TIPS.t50}
               onChange={v => setField('t50', v)} />
 
-            <Lbl>X90</Lbl>
-            <NumInput value={fmt(derived.x90, 2)} readOnly />
-            <Lbl>t90</Lbl>
-            <NumInput value={state.t90} step={0.01} error={errors.t90}
+            <TipLbl tipKey="x90">X90</TipLbl>
+            <NumInput value={fmt(derived.x90, 2)} readOnly tip={TIPS.x90} />
+            <TipLbl tipKey="t90">t90</TipLbl>
+            <NumInput value={state.t90} step={0.01} error={errors.t90} tip={TIPS.t90}
               onChange={v => setField('t90', v)} />
           </Box>
         </Box>
@@ -179,12 +194,12 @@ export default function ParameterPanel({ state, derived, dispatch }: Props) {
           <SectionTitle>Berechnete Kennwerte</SectionTitle>
 
           <Box sx={row6}>
-            <Lbl>kS</Lbl>
-            <NumInput value={fmt(derived.kS, 4)} readOnly />
-            <Lbl>TT</Lbl>
-            <NumInput value={fmt(derived.TT, 3)} readOnly />
-            <Lbl>TG</Lbl>
-            <NumInput value={fmt(derived.TG, 3)} readOnly />
+            <TipLbl tipKey="kS">kS</TipLbl>
+            <NumInput value={fmt(derived.kS, 4)} readOnly tip={TIPS.kS} />
+            <TipLbl tipKey="TT">TT</TipLbl>
+            <NumInput value={fmt(derived.TT, 3)} readOnly tip={TIPS.TT} />
+            <TipLbl tipKey="TG">TG</TipLbl>
+            <NumInput value={fmt(derived.TG, 3)} readOnly tip={TIPS.TG} />
           </Box>
         </Box>
 
